@@ -160,6 +160,11 @@ export async function holdRenders() {
   return { release, started: () => vi.mocked(video.generateVideo).mock.calls.length }
 }
 
+/** Give fire-and-forget work one turn of the event loop to reach the mocked clients. */
+export function settle() {
+  return new Promise((resolve) => setTimeout(resolve, 10))
+}
+
 /**
  * Wait until no order is in a transient status. Tests call this before asserting, so
  * work that was started by mistake finishes inside the test that caused it.
