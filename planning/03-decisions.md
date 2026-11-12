@@ -130,3 +130,28 @@ dependency. It is listed in the README as a next step.
 Following the owner's rule for the route list: the set of environment variables that tests
 remove comes from `.env.example`, and the pilot session in tests is built with the app's own
 cookie and tenant functions. Nothing in the harness has to be kept in step by hand.
+
+## D-19. A keyless public demo through `ARIA_DEMO_WRITES=replay` (owner)
+
+The owner wants a public page for reviewers on a host that holds no key. `replay` opens exactly
+three writes: an order from a template, greenlight, acceptance. It serves recorded content from
+the repository, calls no external client, keeps at most 20 orders in memory and writes nothing
+to disk. Every other write keeps answering 405 with a reason. The short simulated delays stay,
+and the transition table still applies. Cost: the demo shows recorded runs. Nothing in it
+proves that the live pipeline works today.
+
+## D-20. Dependencies: `next` 16.4.6 and `npm audit fix`, no major upgrade (owner)
+
+This replaces D-17, because the app is about to be public. `next` goes from 16.2.4 to 16.4.6,
+which clears the critical advisory. `npm audit fix` without `--force` then updated transitive
+packages in the lockfile only: `postcss`, `sharp`, `browserslist`, `nanoid`, `source-map-js`
+and their companions. `package.json` changed in one line.
+
+One advisory is left: `zod` 3.25.76 (high, memory exhaustion when validating oversized
+collections, GHSA-mrhx-c7xc-m3w5). Its fix is zod 4, a major upgrade, which the owner ruled
+out. `zod` is listed in `package.json`, but no file in `app`, `lib` or `components` imports it
+and no other package depends on it, so the advisory cannot be reached from this app. Removing
+the unused dependency would clear it. That was not asked for and is left as a next step.
+
+Also changed by the upgrade: Next.js 16.4.6 regenerates the tracked file `next-env.d.ts` with
+one more import line. The new version is committed so that a build leaves the tree clean.

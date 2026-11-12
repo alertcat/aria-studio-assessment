@@ -268,3 +268,105 @@ strings found nothing. Nothing was pushed: the repository has no remote.
 
 This entry was committed afterwards as a documentation-only change, and the suite and the
 build were run once more on that final commit.
+
+# Second task: keyless replay demo
+
+Added 2026-11-12 at 16:58. Same conventions as above.
+
+| ID | Task | Status |
+|---|---|---|
+| T10 | Upgrade dependencies | done |
+| T11 | Replay mode, red then green | todo |
+| T12 | Walk the replay in the running app | todo |
+| T13 | Minimal `fly.toml` | todo |
+| T14 | README and planning files | todo |
+| T15 | Extend the session logs | todo |
+| T16 | Final verification | todo |
+
+## T10. Upgrade dependencies
+
+- `next` to 16.4.6, then `npm audit fix` without `--force`. Full suite and build.
+
+Acceptance:
+
+```bash
+npm ls next
+```
+
+Expected: `next@16.4.6`.
+
+```bash
+npm audit
+```
+
+Expected: one advisory left, in `zod`, whose fix is a major-version upgrade.
+
+Result: done. Before: 8 advisories (1 critical, 6 high, 1 moderate). After the `next` upgrade:
+4. After `npm audit fix`: 1, in `zod` (decision D-20). The lockfile changed 47 package versions,
+added 2 and removed 1. Full suite: 115 passed and 1 expected failure. Build passes on Next.js
+16.4.6.
+
+## T11. Replay mode, red then green
+
+- Red first: `tests/replay.test.ts` and a replay tier in `tests/demo-readonly.test.ts`. Output
+  kept in `planning/evidence/T11-red.txt`.
+- Green: `demoWrites()`, `lib/replay.ts`, the content switch in the store, the body rules in
+  three routes.
+
+Acceptance:
+
+```bash
+npx vitest run tests/replay.test.ts
+```
+
+Expected: all tests pass. They include a full walk through both gates with every external
+client set to throw, the 20-order limit, and an empty data directory at the end.
+
+```bash
+npx vitest run tests/demo-readonly.test.ts
+```
+
+Expected: every discovered write handler has a replay case. Three are open, the rest answer
+405 with the replay reason.
+
+## T12. Walk the replay in the running app
+
+Acceptance, in PowerShell:
+
+```powershell
+$env:ARIA_DEMO_WRITES='replay'; npm run dev
+```
+
+Then open http://localhost:3000/studio. Expected: three template briefs. Firing one shows the
+recorded concepts and jury, the first greenlight button plays the recorded render, and
+"Accept and settle" delivers the order. "Send back", a custom brief and the playbook each show
+a sentence that starts with "Replay demo:".
+
+## T13. Minimal fly.toml
+
+Acceptance:
+
+```bash
+git grep -n -E "ARIA_DEMO_WRITES|auto_stop_machines|min_machines_running|memory" -- fly.toml
+```
+
+Expected: the replay variable, stop when idle, zero machines kept running, the smallest
+memory size. No secret and no volume in the file. Nothing deployed.
+
+## T14. README and planning files
+
+Acceptance:
+
+```bash
+git grep -n "Public demo" -- README.md
+```
+
+Expected: a section that says what the public demo can and cannot do.
+
+## T15. Extend the session logs
+
+Acceptance: the two commands of T8, run again.
+
+## T16. Final verification
+
+Acceptance: the four commands of T9, run again.
