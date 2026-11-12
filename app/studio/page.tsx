@@ -12,6 +12,7 @@ import {
   Moon,
 } from '@phosphor-icons/react'
 import { t as tr, type Lang } from '@/lib/i18n'
+import { startPrefs, type StartPrefs } from '@/lib/prefs'
 import { MODELS, RATIOS, DEFAULT_SPEC, POSTER_USD, durationsFor, modelById, normalizeSpec, preChargeUsd, specLabel, type Spec, type Resolution, type Ratio } from '@/lib/models'
 
 // Control Room: the live operating dashboard. Dense, functional, real pipeline.
@@ -236,26 +237,20 @@ export default function StudioPage() {
     }
   }
 
-  // Theme: URL (#theme= or ?theme=, so the console link can pin it), then the
-  // saved choice, then the system setting. The studio only, the landing stays dark.
+  // Theme and language on load: a link can pin them, then the saved choice counts,
+  // then the default (see startPrefs). The studio only, the landing stays dark.
   useEffect(() => {
-    let t = ''
+    let start: StartPrefs = { theme: 'dark', lang: 'en', langChosen: false }
     try {
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-      const query = new URLSearchParams(window.location.search)
-      t = hash.get('theme') || query.get('theme') || localStorage.getItem('aria_theme') || ''
-      const fromUrl = (hash.get('lang') || query.get('lang') || '').toLowerCase()
-      const saved = (localStorage.getItem('aria_lang') || '').toLowerCase()
-      const pick = fromUrl.startsWith('zh') || fromUrl === 'en' ? fromUrl : saved
-      if (pick.startsWith('zh') || pick === 'en') {
-        langTouched.current = true
-        setLang(pick.startsWith('zh') ? 'zh' : 'en')
-      }
-      if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      start = startPrefs(window)
     } catch {
-      t = 'dark'
+      /* keep the defaults */
     }
-    applyTheme(t as 'light' | 'dark', false)
+    if (start.langChosen) {
+      langTouched.current = true
+      setLang(start.lang)
+    }
+    applyTheme(start.theme, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
