@@ -10,7 +10,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 |---|---|---|---|
 | T0 | Branch and repo hygiene | 5 min | done |
 | T1 | Test harness | 15 min | done |
-| T2 | H0: read-only demo | 25 min | todo |
+| T2 | H0: read-only demo | 25 min | done |
 | T3 | H1: gate guards | 35 min | todo |
 | T4 | H2: pin the gap | 5 min | todo |
 | T5 | Check the real server | 5 min | todo |
@@ -94,6 +94,12 @@ git log --oneline baseline..HEAD
 ```
 
 Expected: a `test(red):` commit for H0 directly before its `fix:` commit.
+
+Result: done. Red run: 17 failed, 31 passed (`planning/evidence/T2-red.txt`). The test found
+nine write handlers and the two exemptions on its own. After the fix: 48 passed, full suite 56
+passed, build passes. Extra check: a temporary route with an unguarded `DELETE` was added and
+the unchanged test failed on it (`planning/evidence/T2-new-route-is-caught.txt`). The probe
+route was deleted and never committed.
 
 ## T3. H1: gate guards
 
