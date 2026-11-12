@@ -1,0 +1,1302 @@
+﻿'use client'
+
+import { useEffect, useRef, useState, useCallback } from 'react'
+import {
+  CheckCircle,
+  ArrowUUpLeft,
+  ArrowLeft,
+  FilmSlate,
+  CircleNotch,
+  Lightning,
+  Sun,
+  Moon,
+} from '@phosphor-icons/react'
+import { t as tr, type Lang } from '@/lib/i18n'
+import { MODELS, RATIOS, DEFAULT_SPEC, POSTER_USD, durationsFor, modelById, normalizeSpec, preChargeUsd, specLabel, type Spec, type Resolution, type Ratio } from '@/lib/models'
+
+// Control Room: the live operating dashboard. Dense, functional, real pipeline.
+
+type Agent = {
+  id: string
+  tag: string
+  name: string
+  role: string
+  feeUsd: number
+  reputation: number
+  delivered: number
+  status: 'idle' | 'working'
+}
+type Concept = { concept: string; hook: string; beats: string[]; style: string; video_prompt: string }
+type Draft = { agentId: string; content: string; concept: Concept; cached: boolean; revised?: boolean }
+type Duel = { a: string; b: string; winner: string; judge: string; reason: string }
+type RankEntry = { agentId: string; score: number; wins: number }
+type OrderStatus =
+  | 'inbox'
+  | 'concepting'
+  | 'jury'
+  | 'greenlight'
+  | 'producing'
+  | 'review'
+  | 'revising'
+  | 'delivered'
+type Order = {
+  id: string
+  client: string
+  title: string
+  brief: string
+  vertical: string
+  amountUsd: number
+  cogsUsd: number
+  status: OrderStatus
+  createdAt: number
+  revision: number
+  drafts: Draft[]
+  duels: Duel[]
+  ranking: RankEntry[]
+  winnerAgentId?: string
+  videoFile?: string
+  videoProgress?: number
+  videoNote?: string
+  posterFile?: string
+  talentId?: string
+  videoTaskId?: string
+  videoInterrupted?: boolean
+  spec?: Spec
+  lang?: 'zh' | 'en'
+  talentAsset?: string
+  invoice?: { id: string; paidAt: number; ref: string }
+}
+type Ev = { t: number; tag: string; text: string; orderId?: string }
+type Talent = { id: string; name: string; role: string; fit: string[]; file: string; custom?: boolean }
+type ApiState = {
+  company: { name: string; ceo: string; vertical: string }
+  state: { orders: Order[]; events: Ev[]; revenue: number; delivered: number; playbook: string }
+  agents: Agent[]
+  judges: string[]
+  templates: { client: string; vertical: string; title: string; brief: string; amountUsd: number }[]
+  unitCosts: Record<string, number>
+  talents: Talent[]
+  tenant?: { id: string; pilot: boolean } | null
+  pilot?: boolean
+  needKey?: boolean
+  estimate?: { renderUsd: number; posterUsd: number }
+}
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  inbox: 'Queued',
+  concepting: 'Concepting',
+  jury: 'Jury',
+  greenlight: 'Greenlight',
+  producing: 'Rendering',
+  review: 'At the gate',
+  revising: 'Revising',
+  delivered: 'Paid',
+}
+
+/** The language an order was fired in; older orders fall back to detecting Chinese in the text. */
+function orderLangOf(o: { title: string; brief: string }): Lang {
+  return /[\u4e00-\u9fff]/.test(o.title + ' ' + o.brief) ? 'zh' : 'en'
+}
+
+const TAG_STYLE: Record<string, string> = {
+  PAID: 'text-emerald-400',
+  CHAIN: 'text-emerald-400',
+  GLGHT: 'text-zinc-100',
+  GATE: 'text-zinc-100',
+  TALENT: 'text-zinc-100',
+  DUEL: 'text-amber-300',
+  RANK: 'text-amber-200',
+  JURY: 'text-amber-300',
+  REV: 'text-amber-400',
+  ERR: 'text-red-400',
+  PROD: 'text-zinc-300',
+  IMG: 'text-zinc-300',
+  ESCROW: 'text-zinc-200',
+  BOOK: 'text-zinc-400',
+}
+
+function fmtTime(t: number) {
+  return new Date(t).toLocaleTimeString('en-GB', { hour12: false })
+}
+function money(n: number) {
+  return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+}
+
+const statusChip = (s: OrderStatus) =>
+  'mono shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] ' +
+  (s === 'greenlight' || s === 'review'
+    ? 'border-white/30 text-zinc-100'
+    : s === 'delivered'
+      ? 'border-white/10 text-zinc-400'
+      : 'border-amber-400/30 text-amber-300')
+
+export default function StudioPage() {
+  const [data, setData] = useState<ApiState | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [feedbackText, setFeedbackText] = useState('')
+  const [talentId, setTalentId] = useState<string>('')
+  const [lang, setLang] = useState<Lang>('en')
+  const langRef = useRef<Lang>('en')
+  langRef.current = lang
+  const langTouched = useRef(false)
+  const [needLogin, setNeedLogin] = useState(false)
+  const [loginKey, setLoginKey] = useState('')
+  const [loginErr, setLoginErr] = useState('')
+  const [loggingIn, setLoggingIn] = useState(false)
+  const keyRef = useRef<string>('')
+  const [balance, setBalance] = useState<{ remainingUsd: number | null; quotaUsd: number | null; usedUsd: number } | null>(null)
+  const [keyHint, setKeyHint] = useState('')
+  const [notice, setNotice] = useState('')
+  const [spec, setSpec] = useState<Spec>({ ...DEFAULT_SPEC, poster: false })
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const resumeTried = useRef<Record<string, number>>({})
+  const [playbookDraft, setPlaybookDraft] = useState<string | null>(null)
+  const [custom, setCustom] = useState({
+    client: '',
+    title: '',
+    brief: '',
+    amountUsd: 350,
+    vertical: 'product ad',
+  })
+  const selectedRef = useRef<string | null>(null)
+  selectedRef.current = selectedId
+
+  // The customer's key lives only in this browser session (sessionStorage) and
+  // is attached only to the requests that spend their balance. The server never
+  // stores it.
+  const loadKey = () => {
+    if (!keyRef.current) {
+      try {
+        keyRef.current = sessionStorage.getItem('aria_key') || ''
+      } catch {
+        /* storage unavailable */
+      }
+    }
+    return keyRef.current
+  }
+  const authHeaders = (): Record<string, string> => {
+    const k = loadKey()
+    return k ? { Authorization: `Bearer ${k}` } : {}
+  }
+  const refreshBalance = async () => {
+    if (!loadKey()) return
+    try {
+      const r = await fetch('/api/balance', { headers: authHeaders(), cache: 'no-store' })
+      if (r.ok) {
+        const j = await r.json()
+        if (j.balance) setBalance(j.balance)
+      }
+    } catch {
+      /* transient */
+    }
+  }
+
+  const poll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/state', { cache: 'no-store' })
+      if (res.status === 401) {
+        setNeedLogin(true)
+        return
+      }
+      const json: ApiState = await res.json()
+      setNeedLogin(!!json.needKey)
+      setData(json)
+      const present = selectedRef.current ? json.state.orders.some((o) => o.id === selectedRef.current) : false
+      if (json.state.orders.length === 0) {
+        if (selectedRef.current) setSelectedId(null)
+      } else if (!present) {
+        const prio = (s: OrderStatus) =>
+          ({ greenlight: 0, review: 1, producing: 2, revising: 2, jury: 3, concepting: 4, inbox: 5, delivered: 6 })[s]
+        const hot = [...json.state.orders].sort(
+          (a, b) =>
+            Number(orderLangOf(b) === langRef.current) - Number(orderLangOf(a) === langRef.current) || prio(a.status) - prio(b.status),
+        )[0]
+        setSelectedId(hot.id)
+      }
+    } catch {
+      /* transient */
+    }
+  }, [])
+
+  useEffect(() => {
+    poll()
+    const id = setInterval(poll, 1100)
+    return () => clearInterval(id)
+  }, [poll])
+
+  const applyTheme = (t: 'light' | 'dark', persist = true) => {
+    setTheme(t)
+    try {
+      document.documentElement.dataset.theme = t
+      if (persist) localStorage.setItem('aria_theme', t)
+    } catch {
+      /* no DOM or storage */
+    }
+  }
+
+  // Theme: URL (#theme= or ?theme=, so the console link can pin it), then the
+  // saved choice, then the system setting. The studio only, the landing stays dark.
+  useEffect(() => {
+    let t = ''
+    try {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const query = new URLSearchParams(window.location.search)
+      t = hash.get('theme') || query.get('theme') || localStorage.getItem('aria_theme') || ''
+      const fromUrl = (hash.get('lang') || query.get('lang') || '').toLowerCase()
+      const saved = (localStorage.getItem('aria_lang') || '').toLowerCase()
+      const pick = fromUrl.startsWith('zh') || fromUrl === 'en' ? fromUrl : saved
+      if (pick.startsWith('zh') || pick === 'en') {
+        langTouched.current = true
+        setLang(pick.startsWith('zh') ? 'zh' : 'en')
+      }
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+    } catch {
+      t = 'dark'
+    }
+    applyTheme(t as 'light' | 'dark', false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Key handoff from the provider console link:
+  // #key=sk-... (preferred, the hash never reaches the server) or
+  // ?key= / ?api_key=. The key goes to sessionStorage and the URL is scrubbed.
+  useEffect(() => {
+    let k = ''
+    try {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const query = new URLSearchParams(window.location.search)
+      k = (hash.get('key') || query.get('key') || query.get('api_key') || '').trim()
+    } catch {
+      return
+    }
+    if (!/^sk-[A-Za-z0-9]{20,}$/.test(k)) return
+    window.history.replaceState({}, '', window.location.pathname)
+    void (async () => {
+      const r = await fetch('/api/login', { method: 'POST', headers: { Authorization: `Bearer ${k}` } })
+      if (r.ok) {
+        keyRef.current = k
+        try {
+          sessionStorage.setItem('aria_key', k)
+        } catch {
+          /* storage unavailable */
+        }
+        const j = await r.json().catch(() => ({}))
+        if (j.balance) setBalance(j.balance)
+        setKeyHint('')
+        setNeedLogin(false)
+        setSelectedId(null)
+        poll()
+      } else {
+        setLoginKey(k)
+        setLoginErr(tr(lang, 'Invalid key. Check it in your provider console.'))
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const pilotMode = !!(data?.pilot || data?.tenant?.pilot)
+  const loaded = !!data
+  useEffect(() => {
+    if (loaded && !pilotMode) setSpec((sp) => ({ ...sp, poster: true }))
+  }, [pilotMode, loaded])
+  useEffect(() => {
+    if (!pilotMode) return
+    refreshBalance()
+    const id = setInterval(refreshBalance, 45000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pilotMode])
+
+  const post = async (url: string, body?: unknown, spend = false) => {
+    const pilotNow = !!(data?.pilot || data?.tenant?.pilot)
+    if (spend && pilotNow && !loadKey()) {
+      setKeyHint(tr(lang, 'Enter your key again to continue. It is only kept in this browser session.'))
+      setNeedLogin(true)
+      return
+    }
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(spend ? authHeaders() : {}) },
+      body: body ? JSON.stringify(body) : '{}',
+    })
+    if (r.status === 401 && pilotNow) {
+      setKeyHint(tr(lang, 'Enter your key again to continue. It is only kept in this browser session.'))
+      setNeedLogin(true)
+      return
+    }
+    if (r.status === 402) {
+      const j = await r.json().catch(() => ({}))
+      setNotice(
+        `${tr(lang, 'Insufficient provider balance')}: $${Number(j.remainingUsd ?? 0).toFixed(2)} < $${Number(j.needUsd ?? 0).toFixed(2)}`,
+      )
+    } else if (r.status === 429) {
+      const j = await r.json().catch(() => ({}))
+      setNotice(tr(lang, String(j.reason || 'The studio is busy right now, try again in a minute.')))
+    } else if (r.status === 403) {
+      setNotice(tr(lang, 'This key does not match the current session. Log out and sign in again.'))
+    } else {
+      setNotice('')
+    }
+    poll()
+    if (spend) refreshBalance()
+  }
+
+  const uploadTalent = async (f: File) => {
+    if (!loadKey()) {
+      setKeyHint(tr(lang, 'Enter your key again to continue. It is only kept in this browser session.'))
+      setNeedLogin(true)
+      return
+    }
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      fd.append('name', f.name.replace(/\.[^.]+$/, '').slice(0, 30))
+      const r = await fetch('/api/talent/upload', { method: 'POST', headers: authHeaders(), body: fd })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok && j.talent) {
+        setTalentId(j.talent.id)
+        setNotice('')
+      } else {
+        setNotice(`${tr(lang, 'Portrait upload failed')}: ${String(j.error || r.status).slice(0, 120)}`)
+      }
+    } finally {
+      setUploading(false)
+      poll()
+    }
+  }
+
+  const logout = async () => {
+    keyRef.current = ''
+    try {
+      sessionStorage.removeItem('aria_key')
+    } catch {
+      /* storage unavailable */
+    }
+    setBalance(null)
+    setSelectedId(null)
+    await fetch('/api/logout', { method: 'POST' })
+    setNeedLogin(true)
+    poll()
+  }
+
+  const doLogin = async () => {
+    setLoggingIn(true)
+    setLoginErr('')
+    const k = loginKey.trim()
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${k}` },
+    })
+    setLoggingIn(false)
+    if (r.ok) {
+      keyRef.current = k
+      try {
+        sessionStorage.setItem('aria_key', k)
+      } catch {
+        /* storage unavailable */
+      }
+      const j = await r.json().catch(() => ({}))
+      if (j.balance) setBalance(j.balance)
+      setLoginKey('')
+      setKeyHint('')
+      setNeedLogin(false)
+      setSelectedId(null)
+      poll()
+    } else {
+      setLoginErr(tr(lang, 'Invalid key. Check it in your provider console.'))
+    }
+  }
+
+  // A render interrupted by a restart is fetched automatically while the key is
+  // loaded: at most once a minute per order, and never charged again.
+  useEffect(() => {
+    if (!data || !loadKey()) return
+    const now = Date.now()
+    for (const o of data.state.orders) {
+      if (o.videoInterrupted && o.videoTaskId && !o.videoFile && now - (resumeTried.current[o.id] ?? 0) > 60000) {
+        resumeTried.current[o.id] = now
+        void post('/api/resume', { orderId: o.id }, true)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center">
+        <CircleNotch size={22} className="animate-spin text-zinc-600" />
+      </div>
+    )
+  }
+
+  const { state, agents, templates, talents = [] } = data
+  const orders = state.orders
+  const selected = orders.find((o) => o.id === selectedId) ?? null
+  const agentOf = (id?: string) => agents.find((a) => a.id === id)
+  const shipped = orders.filter((o) => o.status === 'delivered')
+  const cogsDelivered = shipped.reduce((s, o) => s + o.cogsUsd, 0)
+  const grossMargin =
+    state.revenue > 0 ? (((state.revenue - cogsDelivered) / state.revenue) * 100).toFixed(1) : null
+  const winnerDraft = selected?.drafts.find((d) => d.agentId === selected.winnerAgentId)
+  const pilot = !!(data.pilot || data.tenant?.pilot)
+  const hasKey = !!loadKey()
+  const modelDef = modelById(spec.model) ?? MODELS[0]
+  const estSpend = orders.reduce((a, o) => a + (o.cogsUsd || 0), 0)
+  const T = (k: string) => tr(lang, k)
+  const preCharge = preChargeUsd(spec).toFixed(2)
+  const orderCharge = (o: Order) => preChargeUsd(o.spec ?? DEFAULT_SPEC).toFixed(2)
+  const fits = (t: Talent) => !!t.custom || (!!selected && t.fit.includes(selected.vertical))
+  const otherLang: Lang = lang === 'zh' ? 'en' : 'zh'
+  const queueGroups = [
+    { key: lang, label: lang === 'zh' ? '中文' : 'EN', items: orders.filter((o) => orderLangOf(o) === lang) },
+    { key: otherLang, label: otherLang === 'zh' ? '中文' : 'EN', items: orders.filter((o) => orderLangOf(o) === otherLang) },
+  ].filter((g) => g.items.length > 0)
+  const showGroupHeaders = queueGroups.length > 1
+  const selectedEvents = selected ? state.events.filter((e) => e.orderId === selected.id) : []
+
+  return (
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
+      {/* header */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/8 bg-base px-4">
+        <div className="flex items-center gap-3">
+          <a href="/" className="btn-ghost flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px]">
+            <ArrowLeft size={13} /> {T('Site')}
+          </a>
+          <svg viewBox="0 0 100 100" aria-hidden="true" className="h-4 w-4 shrink-0 text-zinc-100" fill="currentColor">
+              <rect x="38.3" y="24.5" width="23.4" height="3" rx="0.6" />
+              <rect x="30.4" y="36.5" width="39.2" height="3" rx="0.6" />
+              <rect x="20" y="48.5" width="60" height="3" rx="0.6" />
+              <rect x="30.4" y="60.5" width="39.2" height="3" rx="0.6" />
+              <rect x="38.3" y="72.5" width="23.4" height="3" rx="0.6" />
+            </svg>
+          <span className="display text-[16px] font-semibold tracking-tight">Aria Studio</span>
+          <span className="mono rounded-full border border-white/20 px-2.5 py-0.5 text-[10.5px] text-zinc-200">
+            {T('CONTROL ROOM / LIVE PIPELINE')}
+          </span>
+        </div>
+        <div className="mono flex items-center gap-4 text-[12px] text-zinc-400">
+          {pilot ? (
+            <>
+              <span>
+                {T('orders')} <span className="text-zinc-100">{orders.length}</span>
+              </span>
+              <span>
+                {T('shipped')} <span className="text-zinc-100">{state.delivered}</span>
+              </span>
+              <span>
+                {T('est. spend')} <span className="text-zinc-100">${estSpend.toFixed(2)}</span>
+              </span>
+              {balance && (
+                <span>
+                  {T('balance')}{' '}
+                  <span className="text-zinc-100">
+                    {balance.remainingUsd === null
+                      ? T('unlimited')
+                      : `$${balance.remainingUsd.toFixed(2)}${balance.quotaUsd ? ` / $${balance.quotaUsd.toFixed(2)}` : ''}`}
+                  </span>
+                </span>
+              )}
+              {notice && <span className="text-red-400">{notice}</span>}
+            </>
+          ) : (
+            <>
+              <span>
+                {T('revenue')} <span className="font-medium text-emerald-400">{money(state.revenue)}</span>
+              </span>
+              <span>
+                {T('margin')} <span className="text-zinc-100">{grossMargin ? `${grossMargin}%` : '--'}</span>
+              </span>
+              <span>
+                {T('shipped')} <span className="text-zinc-100">{state.delivered}</span>
+              </span>
+            </>
+          )}
+          <button
+            onClick={() => applyTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? T('Switch to light theme') : T('Switch to dark theme')}
+            className="btn-ghost flex items-center rounded-full px-2 py-1 text-[11px]"
+          >
+            {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
+          <button
+            onClick={() => {
+              langTouched.current = true
+              const next: Lang = lang === 'en' ? 'zh' : 'en'
+              setLang(next)
+              try {
+                localStorage.setItem('aria_lang', next)
+              } catch {
+                /* storage unavailable */
+              }
+            }}
+            className="btn-ghost rounded-full px-2.5 py-1 text-[11px]"
+          >
+            {lang === 'en' ? '中文' : 'EN'}
+          </button>
+          {pilot && hasKey && !needLogin && (
+            <button onClick={logout} className="btn-ghost rounded-full px-2.5 py-1 text-[11px]">
+              {T('Forget key')}
+            </button>
+          )}
+          
+        </div>
+      </header>
+
+      {/* workbench */}
+      <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_370px]">
+        {/* LEFT: intake + queue */}
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto border-r border-white/8 p-3">
+          {pilot && (
+            <div className={'card-quiet p-3' + (needLogin || !hasKey ? ' ring-1 ring-white/30' : '')}>
+              <div className="display text-[13.5px] font-semibold">{T('Render API key')}</div>
+              {needLogin || !hasKey ? (
+                <>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                    {T('Enter your render API key to start. It stays in this browser session; the server never stores it and uses it only when you approve a render.')}
+                  </p>
+                  {keyHint && <div className="mt-1.5 text-[11px] text-amber-300">{keyHint}</div>}
+                  <input
+                    type="password"
+                    value={loginKey}
+                    onChange={(e) => setLoginKey(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') doLogin()
+                    }}
+                    placeholder="sk-..."
+                    className="mono mt-2 w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[12px] outline-none focus:border-white/40"
+                  />
+                  {loginErr && <div className="mt-1.5 text-[11px] text-red-400">{loginErr}</div>}
+                  <button
+                    onClick={doLogin}
+                    disabled={loggingIn || loginKey.trim().length < 10}
+                    className="btn-primary mt-2 w-full rounded-md px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+                  >
+                    {loggingIn ? '...' : T('Use this key')}
+                  </button>
+                </>
+              ) : (
+                <div className="mono mt-1.5 flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>{T('key loaded, this browser session only')}</span>
+                  <button onClick={logout} className="btn-ghost rounded-full px-2 py-0.5 text-[10.5px]">
+                    {T('Forget key')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="card-quiet flex shrink-0 flex-col p-3">
+            <div className="display text-[13.5px] font-semibold">{T('Queue')}</div>
+            <div className="mt-2 max-h-[46vh] min-h-[22vh] space-y-1.5 overflow-y-auto pr-1">
+              {queueGroups.map((g) => (
+                <div key={g.key} className="space-y-1.5">
+                  {showGroupHeaders && (
+                    <div className="mono pt-1 text-[10.5px] uppercase tracking-wide text-zinc-500">
+                      {g.label} ({g.items.length})
+                    </div>
+                  )}
+              {g.items.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setSelectedId(o.id)}
+                  className={
+                    'tap w-full rounded-lg border p-3 text-left transition-colors ' +
+                    (selectedId === o.id
+                      ? 'border-white/25 bg-white/[0.04]'
+                      : 'border-white/8 bg-white/[0.02] hover:border-white/20')
+                  }
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[12.5px] font-medium">{o.title}</span>
+                    <span className={statusChip(o.status)}>{T(STATUS_LABEL[o.status])}</span>
+                  </div>
+                  <div className="mono mt-1 text-[11px] text-zinc-500">
+                    {o.client} / {pilot ? T(o.vertical) : money(o.amountUsd)}
+                  </div>
+                  {o.status === 'producing' && (
+                    <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-zinc-200 transition-all"
+                        style={{ width: `${o.videoProgress ?? 2}%` }}
+                      />
+                    </div>
+                  )}
+                </button>
+              ))}
+                </div>
+              ))}
+              {orders.length === 0 && <div className="text-[11.5px] text-zinc-600">{T('No orders yet. Fire a brief.')}</div>}
+            </div>
+          </div>
+          <details className="card-quiet p-3" open={orders.length === 0}>
+            <summary className="display cursor-pointer text-[13.5px] font-semibold">{T('Fire a brief')}</summary>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {templates.map((t, i) => (
+                <button
+                  key={i}
+                  onClick={() => post('/api/orders', { template: i, lang })}
+                  disabled={pilot && needLogin}
+                  style={pilot && needLogin ? { opacity: 0.4 } : undefined}
+                  className="btn-ghost flex items-center justify-between rounded-lg px-3 py-2 text-left text-[12px]"
+                >
+                  <span>
+                    {t.client} <span className="text-zinc-500">/ {T(t.vertical)}</span>
+                  </span>
+                  {!pilot && <span className="mono text-zinc-400">{money(t.amountUsd)}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 space-y-2 border-t border-white/8 pt-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="s-client" className="mb-0.5 block text-[10.5px] text-zinc-500">
+                    {T('Client')}
+                  </label>
+                  <input
+                    id="s-client"
+                    value={custom.client}
+                    onChange={(e) => setCustom({ ...custom, client: e.target.value })}
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="s-usd" className="mb-0.5 block text-[10.5px] text-zinc-500">
+                    {pilot ? T('Reference budget, not billed') : T('Budget')}
+                  </label>
+                  <input
+                    id="s-usd"
+                    type="number"
+                    value={custom.amountUsd}
+                    onChange={(e) => setCustom({ ...custom, amountUsd: Number(e.target.value) })}
+                    className="mono w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="s-vert" className="mb-0.5 block text-[10.5px] text-zinc-500">
+                  {T('Vertical')}
+                </label>
+                <select
+                  id="s-vert"
+                  value={custom.vertical}
+                  onChange={(e) => setCustom({ ...custom, vertical: e.target.value })}
+                  className="w-full rounded-md border border-white/10 bg-panel px-2 py-1.5 text-[11.5px] text-zinc-200 outline-none focus:border-white/30"
+                >
+                  <option>product ad</option>
+                  <option>travel promo</option>
+                  <option>science explainer</option>
+                  <option>brand film</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="s-title" className="mb-0.5 block text-[10.5px] text-zinc-500">
+                  {T('Title')}
+                </label>
+                <input
+                  id="s-title"
+                  value={custom.title}
+                  onChange={(e) => setCustom({ ...custom, title: e.target.value })}
+                  className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30"
+                />
+              </div>
+              <div>
+                <label htmlFor="s-brief" className="mb-0.5 block text-[10.5px] text-zinc-500">
+                  {T('Brief')}
+                </label>
+                <textarea
+                  id="s-brief"
+                  rows={3}
+                  value={custom.brief}
+                  onChange={(e) => setCustom({ ...custom, brief: e.target.value })}
+                  className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] leading-relaxed outline-none focus:border-white/30"
+                />
+              </div>
+              <button
+                onClick={() => post('/api/orders', { ...custom, lang })}
+              disabled={pilot && needLogin}
+              style={pilot && needLogin ? { opacity: 0.4 } : undefined}
+                className="btn-primary flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold"
+              >
+                <Lightning size={14} weight="bold" /> {pilot ? T('Submit and run') : T('Lock escrow and run')}
+              </button>
+            </div>
+          </details>
+
+          <details className="card-quiet p-3">
+            <summary className="display cursor-pointer text-[13.5px] font-semibold">{T('CEO Playbook')}</summary>
+            <textarea
+              value={playbookDraft ?? state.playbook}
+              onChange={(e) => setPlaybookDraft(e.target.value)}
+              rows={7}
+              className="mt-2 w-full rounded-md border border-white/10 bg-white/5 p-2 text-[11px] leading-relaxed outline-none focus:border-white/30"
+            />
+            <button
+              onClick={() => post('/api/playbook', { playbook: playbookDraft })}
+              className="btn-ghost mt-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-medium"
+            >
+              Save
+            </button>
+          </details>
+
+        </div>
+
+        {/* CENTER: the stage */}
+        <div className="min-h-0 overflow-y-auto p-4">
+          {!selected ? (
+            <div className="flex h-full items-center justify-center text-[13px] text-zinc-600">
+              {T('Select or fire an order')}
+            </div>
+          ) : (
+            <div className="mx-auto max-w-[880px]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="mono text-[11px] text-zinc-500">
+                    {selected.client} / {T(selected.vertical)}
+                    {!pilot && (
+                      <>
+                        {' '}/ <span className="text-zinc-300">{money(selected.amountUsd)} {T('in escrow')}</span>
+                      </>
+                    )}
+                    {selected.revision > 0 && <span className="text-amber-400"> / rev {selected.revision}</span>}
+                  </div>
+                  <h1 className="display mt-0.5 text-[22px] font-semibold tracking-tight">{selected.title}</h1>
+                </div>
+                <span className={statusChip(selected.status)}>{T(STATUS_LABEL[selected.status])}</span>
+              </div>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">{selected.brief}</p>
+
+              {/* stepper */}
+              <div className="mono mt-3 flex flex-wrap items-center gap-1 text-[10.5px]">
+                {(['Concepts', 'Jury', 'Greenlight', 'Render', 'Gate', 'Paid'] as const).map((lbl, i) => {
+                  const reached = [
+                    selected.status !== 'inbox',
+                    selected.duels.length > 0,
+                    !!selected.winnerAgentId,
+                    !!selected.videoFile || selected.status === 'producing' || !!selected.videoNote,
+                    selected.status === 'review' || selected.status === 'delivered',
+                    selected.status === 'delivered',
+                  ][i]
+                  return (
+                    <span key={lbl} className="flex items-center gap-1">
+                      {i > 0 && <span className={reached ? 'text-zinc-400' : 'text-zinc-700'}>-</span>}
+                      <span
+                        className={
+                          'rounded-full border px-2 py-0.5 ' +
+                          (reached ? 'border-white/25 text-zinc-100' : 'border-white/10 text-zinc-600')
+                        }
+                      >
+                        {T('stage ' + lbl)}
+                      </span>
+                    </span>
+                  )
+                })}
+              </div>
+
+              {/* concepting: skeletons */}
+              {(selected.status === 'concepting' || selected.status === 'inbox') && (
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  {agents.map((a) => (
+                    <div key={a.id} className="card-quiet p-3">
+                      <div className="mono text-[11px] text-zinc-400">
+                        {a.name} <span className="text-zinc-600">{T(a.role)}</span>
+                      </div>
+                      <div className="shimmer mt-3 h-2 w-full rounded-full" />
+                      <div className="shimmer mt-2 h-2 w-2/3 rounded-full" />
+                      <div className="pulse-soft mono mt-3 text-[10.5px] text-amber-300/80">concepting</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* jury: live duel feed */}
+              {selected.status === 'jury' && (
+                <div className="card-quiet mt-4 p-4">
+                  <div className="mono pulse-soft text-[11px] text-amber-300">
+                    {T('jury in session: pairwise duels, Bradley-Terry aggregation')}
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {selectedEvents
+                      .filter((e) => e.tag === 'DUEL')
+                      .map((e, i) => (
+                        <div key={i} className="mono text-[11px] leading-relaxed text-zinc-400">
+                          {e.text}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* greenlight: the human pick */}
+              {selected.status === 'greenlight' && (
+                <div className="mt-4">
+                  <div className="mono mb-2 text-[11px] text-zinc-200">
+                    {pilot
+                      ? `${T('GATE 1 / pick the concept to render.')} ${T('Approving pre-charges about')} $${preCharge} ${T('to your provider balance, settled to actual output on completion; failed renders are refunded in full.')}`
+                      : T('GATE 1 / pick the concept to fund. Concepts cost cents, the render costs about $0.27.')}
+                  </div>
+                  <div className="card-quiet mb-3 p-3">
+                    <div className="mono text-[10.5px] text-zinc-400">{T('SPEC / model, resolution, duration, ratio')}</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <select
+                        value={spec.model}
+                        onChange={(e) => setSpec(normalizeSpec({ ...spec, model: e.target.value }))}
+                        className={'rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30'}
+                      >
+                        {MODELS.map((mm) => (
+                          <option key={mm.id} value={mm.id}>
+                            {mm.label} ({T(mm.note)})
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={spec.resolution}
+                        onChange={(e) => setSpec(normalizeSpec({ ...spec, resolution: e.target.value as Resolution }))}
+                        className={'rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30'}
+                      >
+                        {modelDef.resolutions.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={spec.duration}
+                        onChange={(e) => setSpec(normalizeSpec({ ...spec, duration: Number(e.target.value) }))}
+                        className={'rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30'}
+                      >
+                        {durationsFor(modelDef).map((d) => (
+                          <option key={d} value={d}>
+                            {d}s
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={spec.ratio}
+                        onChange={(e) => setSpec(normalizeSpec({ ...spec, ratio: e.target.value as Ratio }))}
+                        className={'rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-[11.5px] outline-none focus:border-white/30'}
+                      >
+                        {RATIOS.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <label className="mono flex items-center gap-1.5 text-[11px] text-zinc-400">
+                        <input
+                          type="checkbox"
+                          checked={spec.poster !== false}
+                          onChange={(e) => setSpec({ ...spec, poster: e.target.checked })}
+                        />
+                        {T('poster')} +${POSTER_USD.toFixed(2)}
+                      </label>
+                      <span className="mono ml-auto text-[11px] text-zinc-300">
+                        {T('pre-charge')} ${preCharge}
+                      </span>
+                    </div>
+                    {!modelDef.talent && (
+                      <div className="mono mt-1.5 text-[10px] text-zinc-500">{T('this model does not take a virtual talent reference')}</div>
+                    )}
+                  </div>
+                  <div className="card-quiet mb-3 p-3">
+                    <div className="flex items-baseline justify-between">
+                      <div className="mono text-[10.5px] text-zinc-400">
+                        {T('VIRTUAL TALENT / optional on-screen person, synthetic, cleared for commercial use')}
+                      </div>
+                      <div className="mono text-[10px] text-zinc-600">
+                        {T('private asset library, registered once, reused per face')}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setTalentId('')}
+                        className={
+                          'tap flex h-[74px] w-[74px] items-center justify-center rounded-lg border text-[10px] ' +
+                          (talentId === '' ? 'border-white/60 bg-white/[0.06] text-zinc-100' : 'border-white/10 text-zinc-500 hover:border-white/25')
+                        }
+                      >
+                        {T('no face')}
+                      </button>
+                      {talents
+                        .slice()
+                        .sort((a, b) => Number(fits(b)) - Number(fits(a)))
+                        .map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => setTalentId(t.id)}
+                            title={`${t.name}, ${t.role}`}
+                            className={
+                              'tap relative h-[74px] w-[74px] overflow-hidden rounded-lg border ' +
+                              (talentId === t.id ? 'border-white/70 ring-1 ring-white/40' : 'border-white/10 hover:border-white/30') +
+                              (fits(t) ? '' : ' opacity-50')
+                            }
+                          >
+                            <img src={t.file} alt={t.name} className="h-full w-full object-cover" />
+                            <span className="mono absolute inset-x-0 bottom-0 bg-black/65 px-1 py-0.5 text-[9px] text-zinc-100">
+                              {t.name}
+                            </span>
+                          </button>
+                        ))}
+                      {pilot && (
+                        <>
+                          <button
+                            onClick={() => fileRef.current?.click()}
+                            disabled={uploading || !modelDef.talent}
+                            title={T('Upload a synthetic portrait to your private asset library')}
+                            className="tap flex h-[74px] w-[74px] flex-col items-center justify-center rounded-lg border border-dashed border-white/25 text-[10px] text-zinc-400 hover:border-white/50 disabled:opacity-40"
+                          >
+                            <span className="text-[18px] leading-none">+</span>
+                            <span className="mt-1">{uploading ? '...' : T('my portrait')}</span>
+                          </button>
+                          <input
+                            ref={fileRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) uploadTalent(f)
+                              e.target.value = ''
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
+                    {pilot && (
+                      <div className="mono mt-2 text-[10px] text-zinc-500">
+                        {T('Synthetic portraits only (AI generated, 3D, illustrated). Real people are rejected by the upstream audit; the liveness track is a separate enterprise option.')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                    {selected.ranking.map((r, idx) => {
+                      const d = selected.drafts.find((x) => x.agentId === r.agentId)!
+                      const a = agentOf(r.agentId)!
+                      return (
+                        <div
+                          key={r.agentId}
+                          className={
+                            'flex flex-col rounded-xl border p-3.5 ' +
+                            (idx === 0 ? 'border-white/20 bg-white/[0.04]' : 'border-white/8 bg-white/[0.02]')
+                          }
+                        >
+                          <div className="mono flex items-center justify-between text-[10.5px] text-zinc-500">
+                            <span>
+                              {a.name} / {T(a.role)}
+                            </span>
+                            {idx === 0 && <span className="text-zinc-100">jury pick</span>}
+                          </div>
+                          <div className="display mt-1 text-[16px] font-semibold">{d.concept.concept}</div>
+                          <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">{d.concept.hook}</p>
+                          <ol className="mt-2 space-y-0.5">
+                            {d.concept.beats.map((b, i) => (
+                              <li key={i} className="mono text-[10.5px] text-zinc-500">
+                                {i + 1}. {b}
+                              </li>
+                            ))}
+                          </ol>
+                          <div className="mono mt-2 text-[10.5px] italic leading-relaxed text-zinc-600">
+                            {d.concept.style}
+                          </div>
+                          <div className="nums mono mt-2 flex items-center gap-2 text-[10.5px] text-zinc-500">
+                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                              <div
+                                className="h-full rounded-full bg-zinc-200"
+                                style={{ width: `${Math.max(6, r.score * 100)}%` }}
+                              />
+                            </div>
+                            {(r.score * 100).toFixed(0)}% / {r.wins}W
+                          </div>
+                          <button
+                            onClick={() => post('/api/greenlight', { orderId: selected.id, agentId: r.agentId, talentId: (modelDef.talent && talentId) || undefined, spec }, true)}
+                            className={
+                              'mt-3 w-full rounded-lg px-3 py-2 text-[12px] font-semibold ' +
+                              (idx === 0 ? 'btn-primary' : 'btn-ghost')
+                            }
+                          >
+                            {idx === 0 ? T('Greenlight') : T('Override and fund')}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* producing / review / delivered: video stage */}
+              {(selected.status === 'producing' ||
+                selected.status === 'review' ||
+                selected.status === 'revising' ||
+                selected.status === 'delivered') && (
+                <div className="mt-4 grid grid-cols-[260px_minmax(0,1fr)] gap-4">
+                  <div>
+                    {selected.videoFile ? (
+                      <video
+                        key={selected.videoFile}
+                        src={selected.videoFile}
+                        controls
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full rounded-xl border border-white/15"
+                      />
+                    ) : selected.status === 'producing' && !selected.videoInterrupted ? (
+                      <div className="card-quiet flex aspect-[9/16] flex-col items-center justify-center gap-3 p-4">
+                        <FilmSlate size={22} className="text-zinc-200" />
+                        <div className="mono text-3xl font-semibold">{selected.videoProgress ?? 0}%</div>
+                        <div className="h-1.5 w-3/4 overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className="h-full rounded-full bg-zinc-200 transition-all duration-700"
+                            style={{ width: `${selected.videoProgress ?? 2}%` }}
+                          />
+                        </div>
+                        <div className="mono text-center text-[10px] text-zinc-500">
+                          {specLabel(selected.spec ?? DEFAULT_SPEC)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="card-quiet flex aspect-[9/16] flex-col items-center justify-center gap-2 p-4 text-center">
+                        <span className="mono text-[10.5px] text-amber-300/80">
+                          {selected.videoNote ? T(selected.videoNote) : T(STATUS_LABEL[selected.status])}
+                        </span>
+                        {selected.videoTaskId && !selected.videoFile && (
+                          <button
+                            onClick={() => post('/api/resume', { orderId: selected.id }, true)}
+                            className="btn-ghost rounded-full px-3 py-1 text-[11px]"
+                          >
+                            {T('Fetch finished render')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {selected.videoFile && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <a
+                          href={selected.videoFile}
+                          download={`${selected.id}_r${selected.revision}.mp4`}
+                          className="btn-ghost rounded-full px-3 py-1 text-[11px]"
+                        >
+                          {T('Download clip')}
+                        </a>
+                        {selected.posterFile && (
+                          <a
+                            href={selected.posterFile}
+                            download={`${selected.id}_r${selected.revision}.png`}
+                            className="btn-ghost rounded-full px-3 py-1 text-[11px]"
+                          >
+                            {T('Download poster')}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {selected.posterFile && (
+                      <img
+                        src={selected.posterFile}
+                        alt="Campaign key visual"
+                        className="mt-2 w-full rounded-xl border border-white/10"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <div className="card-quiet p-3.5">
+                      <div className="mono flex items-center justify-between text-[10.5px] text-zinc-500">
+                        <span>{T('winning concept by')} {agentOf(selected.winnerAgentId)?.name}</span>
+                        {selected.talentId && (
+                          <span className="rounded-full border border-white/20 px-2 py-0.5 text-[9.5px] text-zinc-200">
+                            {T('virtual talent')} {talents.find((t) => t.id === selected.talentId)?.name ?? selected.talentId} / {T('cleared for commercial use')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="display mt-0.5 text-[17px] font-semibold">{winnerDraft?.concept.concept}</div>
+                      <p className="mt-1 text-[11.5px] leading-relaxed text-zinc-400">{winnerDraft?.concept.hook}</p>
+                      <div className="mono mt-2 text-[10.5px] leading-relaxed text-zinc-600">
+                        {winnerDraft?.concept.video_prompt}
+                      </div>
+                      <div className="mono mt-3 flex gap-5 border-t border-white/8 pt-2.5 text-[11.5px] text-zinc-400">
+                        {pilot ? (
+                          <span>
+                            {T('render spend')} <span className="text-zinc-100">${selected.cogsUsd.toFixed(2)}</span>
+                          </span>
+                        ) : (
+                          <>
+                            <span>
+                              {T('price')} <span className="text-zinc-100">{money(selected.amountUsd)}</span>
+                            </span>
+                            <span>
+                              {T('cogs')} <span className="text-zinc-100">${selected.cogsUsd.toFixed(2)}</span>
+                            </span>
+                            <span>
+                              {T('margin')}{' '}
+                              <span className="text-emerald-400">
+                                {(((selected.amountUsd - selected.cogsUsd) / selected.amountUsd) * 100).toFixed(1)}%
+                              </span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {selected.status === 'review' && (
+                      <div className="mt-3">
+                        <div className="mono mb-1.5 text-[11px] text-zinc-200">
+                          {pilot ? `${T('GATE 2 / accept to deliver, send back to revise')}${lang === 'zh' ? '。' : '.'} ${T('A revision renders again, about')} $${orderCharge(selected)}${lang === 'zh' ? '。' : '.'}` : T('GATE 2 / your acceptance releases the escrow')}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => post('/api/review', { orderId: selected.id, action: 'approve' })}
+                            className="btn-primary flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12.5px] font-semibold"
+                          >
+                            <CheckCircle size={15} weight="bold" /> {T('Accept and settle')}
+                          </button>
+                          <input
+                            aria-label="CEO revision notes"
+                            placeholder={T('Notes for the revision')}
+                            value={feedbackText}
+                            onChange={(e) => setFeedbackText(e.target.value)}
+                            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[12px] outline-none placeholder:text-zinc-600 focus:border-white/30"
+                          />
+                          <button
+                            onClick={() => {
+                              post('/api/review', { orderId: selected.id, action: 'revise', feedback: feedbackText, lang }, true)
+                              setFeedbackText('')
+                            }}
+                            className="btn-ghost flex items-center gap-1 rounded-lg px-3 py-2 text-[12px] font-medium"
+                          >
+                            <ArrowUUpLeft size={13} /> {T('Send back')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {selected.status === 'delivered' && selected.invoice && (
+                      <div className="card-quiet mt-3 p-3.5">
+                        <div className="flex items-center justify-between">
+                          <span className="mono text-[12px] font-medium text-zinc-200">{selected.invoice.id}</span>
+                          <span className="mono text-[12.5px] font-semibold text-emerald-400">
+                            {pilot ? T('accepted') : `${money(selected.amountUsd)} settled`}
+                          </span>
+                        </div>
+                        <div className="mono mt-1 break-all text-[10.5px] text-zinc-600">
+                          {selected.invoice.ref.includes('https://') ? (
+                            <>
+                              {selected.invoice.ref.split('https://')[0]}
+                              <a
+                                href={'https://' + selected.invoice.ref.split('https://')[1]}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-emerald-400 underline decoration-emerald-400/40"
+                              >
+                                View on BaseScan
+                              </a>
+                            </>
+                          ) : (
+                            selected.invoice.ref
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* jury detail */}
+              {selected.duels.length > 0 && selected.status !== 'jury' && (
+                <details className="mt-4">
+                  <summary className="mono cursor-pointer text-[11px] text-zinc-500 hover:text-zinc-300">
+                    {T('jury detail')}: {selected.duels.length} {T('duels, Bradley-Terry aggregate')}
+                  </summary>
+                  <div className="card-quiet mt-2 space-y-1 p-3">
+                    {selected.duels.map((d, i) => (
+                      <div key={i} className="mono text-[10.5px] leading-relaxed text-zinc-500">
+                        {agentOf(d.a)?.name} vs {agentOf(d.b)?.name} / {d.judge} picked{' '}
+                        <span className="text-zinc-200">{agentOf(d.winner)?.name}</span>: {d.reason}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: feed + economics */}
+        <div className="flex min-h-0 flex-col gap-3 overflow-hidden border-l border-white/8 p-3">
+          {pilot ? (
+            <div className="card-quiet grid shrink-0 grid-cols-3 gap-2 p-3 text-center">
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('shipped')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold">{shipped.length}</div>
+              </div>
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('avg cogs')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold">
+                  {shipped.length ? '$' + (cogsDelivered / shipped.length).toFixed(2) : '--'}
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('total spend')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold">${estSpend.toFixed(2)}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="card-quiet grid shrink-0 grid-cols-3 gap-2 p-3 text-center">
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('avg order')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold">
+                  {shipped.length ? money(state.revenue / shipped.length) : '--'}
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('avg cogs')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold">
+                  {shipped.length ? '$' + (cogsDelivered / shipped.length).toFixed(2) : '--'}
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[10px] text-zinc-500">{T('margin')}</div>
+                <div className="mono mt-0.5 text-[15px] font-semibold text-emerald-400">
+                  {grossMargin ? `${grossMargin}%` : '--'}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="card-quiet shrink-0 p-3">
+            <div className="mono text-[10px] uppercase tracking-wide text-zinc-500">{T('The team')}</div>
+            <div className="mt-2 space-y-1.5">
+              {agents.map((a) => (
+                <div key={a.id} className="mono flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-300">
+                    {a.name} <span className="text-zinc-600">{T(a.role)}</span>
+                  </span>
+                  <span className="flex items-center gap-2 text-zinc-500">
+                    rep {a.reputation}
+                    <span
+                      className={
+                        'h-1.5 w-1.5 rounded-full ' +
+                        (a.status === 'working' ? 'pulse-soft bg-amber-400' : 'bg-zinc-500')
+                      }
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card-quiet flex min-h-0 flex-1 flex-col p-3">
+            <div className="mono shrink-0 text-[10px] uppercase tracking-wide text-zinc-500">{T('Live feed')}</div>
+            <div className="mono mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1 text-[10.5px] leading-relaxed">
+              {state.events.map((e, i) => (
+                <div key={i} className={'flex gap-1.5 ' + (selected && e.orderId === selected.id ? '' : 'opacity-60')}>
+                  <span className="shrink-0 text-zinc-600">{fmtTime(e.t)}</span>
+                  <span className={'shrink-0 font-medium ' + (TAG_STYLE[e.tag] ?? 'text-zinc-400')}>{e.tag}</span>
+                  <span className={i === 0 ? 'text-zinc-200' : 'text-zinc-500'}>{e.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
