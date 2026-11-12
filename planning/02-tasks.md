@@ -281,7 +281,7 @@ Added 2026-11-12 at 16:58. Same conventions as above.
 | T13 | Minimal `fly.toml` | done, not deployed |
 | T14 | README and planning files | done |
 | T15 | Extend the session logs | done |
-| T16 | Final verification | todo |
+| T16 | Final verification | done |
 
 ## T10. Upgrade dependencies
 
@@ -395,3 +395,13 @@ the upgrade: `npm ci` in 62 seconds, 149 tests passed and 1 expected failure, bu
 ## T16. Final verification
 
 Acceptance: the four commands of T9, run again.
+
+Result: done at commit ed97d24. `npm test`: 5 files, 149 passed and 1 expected failure, in 3
+seconds. `npm run build`: passes on Next.js 16.4.6. The tree is clean. The brief PDF, `data/`
+and `.env.local` are not tracked. A scan of the 44 changed files (the lockfile aside) for the
+Windows user name, e-mail addresses, absolute paths and key-like strings found nothing.
+`npm audit` reports one advisory, in `zod`. Nothing was pushed and nothing was deployed: the
+repository has no remote and no Fly command was run.
+
+This entry was committed afterwards as a documentation-only change, and the suite and the
+build were run once more on that final commit.
