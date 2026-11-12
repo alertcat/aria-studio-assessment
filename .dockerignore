@@ -10,3 +10,6 @@ out
 api_off
 Dockerfile
 *.log
+# working notes and logs stay out of the image, and so does the assessment brief
+planning
+logs
