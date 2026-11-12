@@ -4,7 +4,7 @@ The log of the build session. The conversation was held in Chinese, and this fil
 it was. English translation: [session-01.en.md](session-01.en.md). What is included, what was
 left out and what was redacted: [README.md](README.md).
 
-Contents: 2 user messages, 23 assistant replies, 207 tool calls, 15:10 to 16:08 local time on 2026-11-12.
+Contents: 3 user messages, 42 assistant replies, 344 tool calls, 15:10 to 17:19 local time on 2026-11-12.
 
 ---
 
@@ -434,3 +434,322 @@ Tool calls · 16:07
 - `Edit` planning/02-tasks.md
 - `Edit` planning/02-tasks.md
 - `Bash` Run the final log export, check structure and redaction, run tests and build, and commit the logs and the cor…
+- `update_plan` next step
+- `Bash` Final verification: tests, build, clean tree, tracked-file checks, and a sensitive-string scan of every chang…
+
+**Assistant** · 16:09
+
+最终验证已通过（测试、构建、敏感信息扫描、工作区干净）。现在把结果记入任务文件，提交后在最终提交上再跑一遍。
+
+Tool calls · 16:09
+
+- `Bash` Record the final verification, commit it, re-run tests and build on the final commit, and print the commit li…
+- `Glob` *
+
+**Assistant** · 16:10
+
+全部工作已提交并验证完。正在把你的两条长期偏好记进备忘，然后给出最终总结。
+
+Tool calls · 16:10
+
+- `Write` <path>
+- `Write` <path>
+- `Write` <path>
+- `wrap_up` next-step box shown to the user. Recap: "H0、H1 已修复并提交，H2 按决定未修、已用测试钉住。最终提交 a53bbc9 上 115 个测试通过加 1 个预期失败，构建通过，工作区干净。没有推送；CI 还没在 GitHub 上跑过，测试只在 Windows 上跑过。" Question: "next 16.2.4 的安全升级，要现在在这个分支上做吗？"
+
+**Assistant** · 16:11
+
+```
+a53bbc9 docs(planning): record the final verification
+b4a6c24 docs: correct the time claims and record T8
+677a872 docs(logs): session log, Chinese original and English translation
+134cc6f docs: README section for the assessment window
+1cd2b58 ci: install, test and build on push and pull request
+92120ce docs(planning): T5 live check result and miss M-09
+7e1b401 fix(studio): render the refusal notice in demo mode too
+39fcc16 test: pin H2 (revenue booked before settlement) as a known gap
+b70ccbe fix: one transition table guards greenlight, approve, revise and resume
+f1dc170 test(red): order gates must refuse actions from illegal statuses
+eeef9d4 docs(planning): T2 result and evidence that unlisted routes are caught
+702980e feat(studio): show the server's reason when a write is refused
+c7f3c65 fix: demo mode is read-only unless ARIA_DEMO_WRITES=1
+7a37dcf test(red): demo mode must refuse writes on every discovered route
+37cec32 test: add a hermetic Vitest harness
+2a656fd docs(planning): handoff, plan, tasks, decisions and agent misses
+4a7dc7f chore: keep the assessment brief out of git
+```
+
+1. **结果**：H0、H1 已修，每个都是先提交红灯测试再提交修复。H2 按你的决定没修，用一个预期失败的测试钉住，并写进 README 的最弱环节。
+2. **H0**：9 条写路由在演示模式下默认返回 405，带 `Allow` 头和一句原因，`ARIA_DEMO_WRITES=1` 才放开，试用模式不变。权限测试从 `app/` 自动枚举，放行的只有 `login` 和 `logout`，各自的理由由测试约束。
+3. **H1**：[lib/gates.ts](lib/gates.ts) 一张状态转移表，store 强制执行，路由返回 404 或 409。`store.ts` 只改了 22 行。
+4. **验证**：最终提交 `a53bbc9` 上 `npm test` 是 115 通过加 1 个预期失败，`npm run build` 通过，工作区干净。另外在真实服务里实测了 405 和界面提示。
+5. **界面例外比你批的多一行**：共改 5 行，`post()` 里的 405 分支，加上演示模式页头里渲染提示的一行。第二处是实测发现提示不显示后补的。不认可可以单独回退 `7e1b401`。
+6. **没验证的**：CI 没在 GitHub 上跑过，因为没推送。Docker 没开，测试只在 Windows 上跑过。落地页上点写操作被拒时仍然没有提示。
+7. **需要你知道**：`npm audit` 报基线依赖 8 条告警，其中 `next` 16.2.4 是 critical，16.4.6 修复。按范围没动，已写进 README 和决定 D-17。
+8. **失误记录**共 12 条，在 [planning/04-agent-misses.md](planning/04-agent-misses.md)：2 条来自交接文件，1 条是你指出的手写清单，其余 9 条是我自己的，包括把第一阶段用时估成 45 分钟，实际 17 分钟。
+9. **用时**：15:10 开始，一小时出头，远低于 3 小时的预算。
+10. **日志**：三个文件在 [logs/](logs/README.md)。日志止于导出那一刻，不含最终验证和这份总结。
+11. 没有推送，仓库也没有配置 remote。推送、开 PR、录视频由你来做。
+
+**User** · 16:48
+
+新任务，接着本会话做，规则和之前一样：对话中文，仓库里的文件英文，测试先行，红灯提交再修复提交，不推送。这次不用停下来等我确认，做完用不超过 15 行中文总结。
+
+背景：我要给评审一个不需要任何密钥的公开测试页面。主机上不会放任何 key。
+
+1. 先升级依赖。next 升到 16.4.6，再跑不带 --force 的 npm audit fix。跑全量测试和构建。剩下的告警记进决定，不要做大版本升级。
+2. 给 ARIA_DEMO_WRITES 加第三个取值 replay，用于公开演示：
+   - 只放行三件事：用三个模板之一下单、放行、验收。其余写路由，包括返工、上传、清理、重置、改准则，照旧返回 405 并说明原因。
+   - 内容全部来自仓库里已有的 public/demo-state.json 和 public/media。回放模式下不得调用任何外部客户端。测试里让这些客户端一被调用就抛错，以此证明。
+   - 自定义订单在回放模式下拒绝，并给出一句明确的原因。
+   - 订单只留在内存里，最多保留 20 单，超过就丢最旧的。不写磁盘。
+   - 保留短的模拟延迟，让评审看得到流程在走。
+   - 状态转移表继续生效。权限测试继续自动枚举路由，并覆盖 replay 这一档。
+3. 加一个最小的 fly.toml：一台最小规格的机器，空闲自动停机，环境变量只有 ARIA_DEMO_WRITES=replay，不带任何密钥，不挂卷。应用名先写 aria-studio-demo，我部署时会覆盖。不要执行任何部署命令。
+4. 更新 README：评估期改动里加一条；写明公开演示能做什么、不能做什么。更新 planning 里的计划、任务、决定和失误记录。
+5. 把这一段工作追加进 logs 里的中文原文和英文译本，脱敏规则不变。
+6. 最后跑全量测试和构建，贴出 git log --oneline baseline..HEAD。
+
+Tool calls · 16:52
+
+- `update_plan` set the task list (9 steps)
+- `Bash` Inspect the structure of the frozen demo snapshot: templates, orders, media references
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 16:54
+
+快照里只有 Kopi Loco、Visit Palawan 和 SlateLab 三个模板有完整录制，代码中的 Kaya 模板没有录制。接下来我先升级依赖，然后写计划并着手实现回放模式。
+
+Tool calls · 16:54
+
+- `Bash` Upgrade next to 16.4.6 with an exact pin
+- `Bash` Run npm audit fix without force and report what changed and what remains
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 16:55
+
+依赖升级已完成：`next` 升到 16.4.6，只剩 `zod` 一条告警，修复需升到 4.x 大版本，按要求暂不处理。接下来跑全量测试和构建。
+
+Tool calls · 16:55
+
+- `Bash` Check where zod is used, then run the full suite and the build on the upgraded dependencies
+- `Bash` Inspect how the upgraded Next.js rewrote the generated type file and whether it is stable
+
+**Assistant** · 16:58
+
+构建通过，生成文件 `next-env.d.ts` 多了一行（新版 Next 自动加的，稳定）。现在核对几处界面代码，然后写计划并提交依赖升级。
+
+Tool calls · 16:58
+
+- `Bash` Check client imports, event tag styling and template rendering in the UI code
+- `Bash` Look at the studio page's imports, event tag rendering and template list usage
+- `Bash` Read the ends of the planning files before appending the new task
+- `Bash` Append the second task's plan and task list to the planning files
+- `Bash` Record the dependency decision and result, then commit the plan and the upgrade
+
+**Assistant** · 16:59
+
+依赖升级已提交。现在写回放模式的红灯测试，先看一眼快照里一条录制的具体字段。
+
+Tool calls · 16:59
+
+- `Bash` Inspect one recorded run in the snapshot: fields, duel order, media files, events
+- `Read` tests/harness.ts (from line 17)
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+
+**Assistant** · 17:02
+
+红灯测试的辅助函数已加好。现在写 `tests/replay.test.ts`，并给权限测试加上 replay 这一档。
+
+Tool calls · 17:02
+
+- `Write` tests/replay.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Bash` Run the new replay tests and the extended permission test against the unfixed code
+
+**Assistant** · 17:03
+
+红灯已按预期失败（两个文件里 24 个失败，其余三个文件仍然全绿）。保存输出、确认构建能过，提交红灯后开始实现。
+
+Tool calls · 17:03
+
+- `Bash` Save the sanitized red output as evidence and confirm the build type-checks the new tests
+- `Bash` Commit the failing replay tests with their captured output
+- `Edit` lib/tenant.ts
+- `Write` lib/replay.ts
+- `Read` lib/ctx.ts
+
+**Assistant** · 17:05
+
+正在实现回放模式：模式解析和录制数据模块已写好，现在改路由守卫和 store 里的内容来源切换。
+
+Tool calls · 17:05
+
+- `Edit` lib/ctx.ts
+- `Edit` lib/ctx.ts
+- `Bash` Locate the lines in the store that the replay switch touches
+- `Bash` Print the exact store snippets that will be edited for replay mode
+
+**Assistant** · 17:05
+
+Now the store edits, one small switch at a time.
+
+Tool calls · 17:05
+
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Read` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` .env.example
+- `Bash` Run the replay tests and the permission test after implementing replay mode
+- `Bash` Run the full suite and the build with replay mode implemented
+
+**Assistant** · 17:07
+
+实现已转绿：全量 149 个通过加 1 个预期失败，构建通过。提交前我先自查一遍 store 的改动。
+
+Tool calls · 17:07
+
+- `Bash` Review the full store diff for replay mode
+- `Bash` Commit the replay implementation, then run five mutation checks against the replay tests and restore each one
+- `Bash` Save the mutation-check evidence, rebuild, and write a temporary launch config for the replay server
+- `preview_start` start the dev server "aria-replay" in the browser pane
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 17:08
+
+五个反向验证都已被测试抓到，回放模式也已提交。接下来我会用不带任何密钥、只设置 `ARIA_DEMO_WRITES=replay` 的生产构建启动真实服务，走一遍完整流程。
+
+Tool calls · 17:09
+
+- `Bash` Walk one template through both gates against the running replay server and try every refusal
+- `browser_batch` navigate http://localhost:3417/studio, then wait, then inspect the page with JavaScript
+- `javascript_tool` inspect the page with JavaScript
+- `javascript_tool` inspect the page with JavaScript
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 17:10
+
+界面走查基本通过，我接下来确认“验收”步骤在界面上确实生效，并测量内存占用。
+
+Tool calls · 17:10
+
+- `Bash` Confirm the accepted order in server state and measure the server's memory
+- `preview_stop` stop the dev server
+- `Bash` Remove the temporary launch config and confirm the tree state after the live check
+- `Agent` Check current fly.toml syntax
+
+**Assistant** · 17:12
+
+真实服务和界面走查都通过了（内存约 90 MB）。Fly 的配置语法已对照官方文档核实，现在写 `fly.toml`。
+
+Tool calls · 17:12
+
+- `Write` fly.toml
+- `Bash` Show the current dockerignore and check that fly.toml parses as TOML
+- `Bash` Record replay results and decisions, then commit the planning update and the Fly configuration
+- `Bash` Check which parts of the failed multi-step command were applied
+
+**Assistant** · 17:13
+
+刚才那条把多段文档塞进一条 shell 命令的写法解析失败了（什么都没执行）。改用编辑工具逐个更新文件。
+
+Tool calls · 17:13
+
+- `Edit` .dockerignore
+- `Edit` planning/03-decisions.md
+- `Edit` planning/04-agent-misses.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Bash` Commit the planning update and the Fly configuration as two commits
+- `Read` README.md (from line 1)
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+
+**Assistant** · 17:15
+
+README 的公开演示一节已写好，正在更新其余过时的几处，然后后台用干净导出再演一遍安装、测试、构建。
+
+Tool calls · 17:15
+
+- `Bash` Locate the remaining stale lines in the README
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` planning/02-tasks.md
+- `Bash` Run suite and build, then commit the README update
+- `Bash` Rehearse install, test and build from a clean export of HEAD after the dependency upgrade
+- `Bash` Re-run the log export on the grown transcript, check the committed log is an unchanged prefix, and list new t…
+- `Write` <scratch>/translations-en-part2.json
+
+**Assistant** · 17:16
+
+正在把第二段工作追加进日志：先合并英文译文，再更新日志说明文件。
+
+Tool calls · 17:17
+
+- `Edit` <scratch>/build-logs.mjs
+- `Bash` Run the log build with the merged translations to see which new strings still need one
+- `Write` <scratch>/translations-en-part3.json
+- `Bash` Fix the translation part ordering, rebuild both logs, and spot-check that Chinese and English entries line up
+- `Bash` Read the result of the second clean-export rehearsal and remove its directory
+
+**Assistant** · 17:18
+
+干净导出的安装、测试、构建都通过。现在更新 README 里的实测时间和日志说明，然后做最后一次导出。
+
+Tool calls · 17:18
+
+- `Edit` README.md
+- `Edit` README.md
+- `Write` logs/README.md
+- `Edit` planning/04-agent-misses.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Bash` Proofread the new README sections as they stand
+- `Bash` Check whether the portrait upload control is shown outside pilot mode
+- `Edit` README.md
+- `Write` <scratch>/translations-en-part3.json
+- `Write` <scratch>/check-logs.mjs
+- `Bash` Run the final log export and the structure, redaction and prefix checks

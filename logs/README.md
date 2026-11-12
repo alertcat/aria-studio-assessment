@@ -3,9 +3,13 @@
 ## Which session this is
 
 `session-01` is the build session of the assessment window: one Claude Code session on
-2026-11-12, working on the branch `assessment/gate-harness`. It starts with the owner's first
-message at 15:10 local time and covers phase 1 (checking the handoff, the plan), the owner's
-approval at 15:34, and phase 2 (tests, fixes, live check, CI, README, this export).
+2026-11-12, working on the branch `assessment/gate-harness`. It has two parts, because the
+owner gave a second task after the first one was finished.
+
+| Part | Local time | What happened |
+|---|---|---|
+| 1 | from 15:10 | The handoff is checked against the code, the plan is written and approved at 15:34, then tests, fixes, live check, CI, README and the first log export |
+| 2 | from 16:48 | A follow-up task: dependency upgrade, the keyless replay demo, `fly.toml`, README and planning updates, and this second export |
 
 It is the only session of the window. The recon session that wrote
 `planning/00-recon-handoff.md` is not here: its raw log also covers unrelated private work, as
@@ -22,6 +26,10 @@ of scope for the assessment and has no logs in this repository.
 Both files have the same entries in the same order. The tool-call lines are identical in both,
 because they were written in English during the session.
 
+The files were written twice. The second export added part 2 and the end of part 1 that the
+first export could not contain. Everything the first export held is unchanged, apart from the
+line of totals in the header.
+
 ## What is in a log
 
 - Every message the owner typed, in full.
@@ -34,12 +42,15 @@ because they were written in English during the session.
 - Tool output. No file contents, command output or web responses.
 - Content the app injects into the conversation: system prompts, reminders, background task
   notifications, and the wrapper tags around pasted text.
-- The model's private reasoning. One exception: an early progress note that the app stored as
-  a reasoning summary instead of a reply. It is included and labelled, so that the log has
-  every progress update of the session.
-- The end of the session. The export is itself part of the session, so the log stops where
-  the export ran. Not included: the commit of these files, the final test and build run, and
-  the closing summary to the owner.
+- The model's private reasoning. One exception: a few short progress notes that the app
+  stored as a reasoning summary instead of a reply. They are included and labelled, so that
+  the log has every progress update of the session. The app reworded them slightly when it
+  stored them, so they are not letter for letter what the agent typed.
+- The report of the one sub-agent that was used (to read the Fly.io configuration reference).
+  The call is listed like any other tool call. Its answer is tool output.
+- The very end. The export is itself part of the session, so the log stops where the last
+  export ran. Not included: the commit of these files, the final test and build run, and the
+  closing summary of part 2.
 
 ## What was redacted
 
@@ -54,9 +65,10 @@ The same rules ran over every line of both files:
 | Any other absolute path | `<path>` |
 | Strings that look like keys (`sk-...`, long hex values, tokens of 32 characters or more) | `<key>`, `<hex>`, `<id>` |
 
-In practice only paths were hit: a handful of scratch paths in tool-call lines. No e-mail
-address, user name or key appeared in the exported text. No real key was used in the session:
-the tests run with the network closed and build a fake key at run time.
+In practice only paths were hit: scratch paths in tool-call lines. No e-mail address, user
+name or key appeared in the exported text. No real key was used in the session: the tests run
+with the network closed and build a fake key at run time, and the replay demo was run with no
+key at all.
 
 ## How it was made
 
@@ -70,5 +82,7 @@ repository.
 
 - Times are local time (UTC+8).
 - Links inside messages are relative to the repository root, not to this folder.
+- One progress line of part 2 is in English in the original. The agent slipped out of the
+  agreed language there. It is recorded as a miss.
 - The session's planning files are in [`../planning/`](../planning/). Each time the agent was
   proven wrong is recorded in [`../planning/04-agent-misses.md`](../planning/04-agent-misses.md).

@@ -6,7 +6,7 @@ written by the same agent that took part in the session. Tool-call lines are ide
 files, because they were written in English during the session. What is included, what was left
 out and what was redacted: [README.md](README.md).
 
-Contents: 2 user messages, 23 assistant replies, 207 tool calls, 15:10 to 16:08 local time on 2026-11-12.
+Contents: 3 user messages, 42 assistant replies, 344 tool calls, 15:10 to 17:19 local time on 2026-11-12.
 
 ---
 
@@ -436,3 +436,322 @@ Tool calls · 16:07
 - `Edit` planning/02-tasks.md
 - `Edit` planning/02-tasks.md
 - `Bash` Run the final log export, check structure and redaction, run tests and build, and commit the logs and the cor…
+- `update_plan` next step
+- `Bash` Final verification: tests, build, clean tree, tracked-file checks, and a sensitive-string scan of every chang…
+
+**Assistant** · 16:09
+
+The final verification has passed (tests, build, sensitive-string scan, clean tree). Now I record the result in the task file, commit it, and run everything once more on the final commit.
+
+Tool calls · 16:09
+
+- `Bash` Record the final verification, commit it, re-run tests and build on the final commit, and print the commit li…
+- `Glob` *
+
+**Assistant** · 16:10
+
+All work is committed and verified. I am saving two of your standing preferences to memory, then I give the final summary.
+
+Tool calls · 16:10
+
+- `Write` <path>
+- `Write` <path>
+- `Write` <path>
+- `wrap_up` next-step box shown to the user. Recap: "H0 and H1 are fixed and committed. H2 is not fixed, as decided, and is pinned with a test. On the final commit a53bbc9, 115 tests pass plus 1 expected failure, the build passes and the tree is clean. Nothing was pushed. CI has not run on GitHub yet, and the tests have only run on Windows." Question: "The security upgrade of next 16.2.4: do it now, on this branch?"
+
+**Assistant** · 16:11
+
+```
+a53bbc9 docs(planning): record the final verification
+b4a6c24 docs: correct the time claims and record T8
+677a872 docs(logs): session log, Chinese original and English translation
+134cc6f docs: README section for the assessment window
+1cd2b58 ci: install, test and build on push and pull request
+92120ce docs(planning): T5 live check result and miss M-09
+7e1b401 fix(studio): render the refusal notice in demo mode too
+39fcc16 test: pin H2 (revenue booked before settlement) as a known gap
+b70ccbe fix: one transition table guards greenlight, approve, revise and resume
+f1dc170 test(red): order gates must refuse actions from illegal statuses
+eeef9d4 docs(planning): T2 result and evidence that unlisted routes are caught
+702980e feat(studio): show the server's reason when a write is refused
+c7f3c65 fix: demo mode is read-only unless ARIA_DEMO_WRITES=1
+7a37dcf test(red): demo mode must refuse writes on every discovered route
+37cec32 test: add a hermetic Vitest harness
+2a656fd docs(planning): handoff, plan, tasks, decisions and agent misses
+4a7dc7f chore: keep the assessment brief out of git
+```
+
+1. **Result**: H0 and H1 are fixed, each with a red test commit first and then the fix commit. H2 is not fixed, as you decided. It is pinned with an expected-failure test and written into the README as the weakest part.
+2. **H0**: the 9 write routes answer 405 by default in demo mode, with an `Allow` header and one reason sentence. Only `ARIA_DEMO_WRITES=1` opens them, and pilot mode is unchanged. The permission test enumerates from `app/`. Only `login` and `logout` are let through, each with a reason that the test enforces.
+3. **H1**: one state transition table in [lib/gates.ts](lib/gates.ts), enforced by the store, with the routes answering 404 or 409. `store.ts` changed by only 22 lines.
+4. **Verification**: on the final commit `a53bbc9`, `npm test` gives 115 passed plus 1 expected failure, `npm run build` passes, and the tree is clean. The 405 and the UI notice were also checked in the running server.
+5. **The UI exception is one line more than you approved**: 5 lines changed in total, the 405 branch in `post()` plus one line that renders the notice in the demo-mode header. The second was added after the live check showed that the notice did not appear. If you do not accept it, `7e1b401` can be reverted on its own.
+6. **Not verified**: CI has not run on GitHub, because nothing was pushed. Docker was not running, so the tests have only run on Windows. A refused write on the landing page still shows no notice.
+7. **You should know**: `npm audit` reports 8 advisories in the baseline dependencies. `next` 16.2.4 is critical and 16.4.6 fixes it. It was left alone as out of scope and is written into the README and decision D-17.
+8. **Agent misses**: 12 entries in [planning/04-agent-misses.md](planning/04-agent-misses.md). 2 come from the handoff, 1 is the hand-written list you pointed out, and the other 9 are mine, including estimating phase 1 at 45 minutes when it took 17.
+9. **Time**: started at 15:10, a little over one hour, far below the 3-hour budget.
+10. **Logs**: three files in [logs/](logs/README.md). The log stops at the moment of the export, so it does not contain the final verification or this summary.
+11. Nothing was pushed, and the repository has no remote configured. Pushing, opening the PR and recording the video are yours to do.
+
+**User** · 16:48
+
+New task, continuing in this session, same rules as before: conversation in Chinese, files in the repository in English, tests first, a red commit and then the fix commit, no push. This time there is no need to stop and wait for my confirmation. When done, summarise in no more than 15 lines of Chinese.
+
+Background: I want to give the reviewers a public test page that needs no key at all. The host will hold no key.
+
+1. Upgrade the dependencies first. Take next to 16.4.6, then run npm audit fix without --force. Run the full test suite and the build. Record the remaining advisories in the decisions. Do not do major-version upgrades.
+2. Give ARIA_DEMO_WRITES a third value, replay, for the public demo:
+   - Only three things are let through: placing an order from one of the three templates, greenlight, acceptance. The other write routes, including revision, upload, prune, reset and changing the playbook, answer 405 with a reason as before.
+   - All content comes from public/demo-state.json and public/media, which are already in the repository. In replay mode no external client may be called. Prove it by making those clients throw in the tests as soon as they are called.
+   - Custom orders are refused in replay mode, with one clear reason sentence.
+   - Orders stay in memory only, at most 20 are kept, and beyond that the oldest is dropped. Nothing is written to disk.
+   - Keep the short simulated delays, so that reviewers can see the flow moving.
+   - The state transition table stays in force. The permission test keeps enumerating routes automatically and covers the replay tier.
+3. Add a minimal fly.toml: one machine of the smallest size, automatic stop when idle, ARIA_DEMO_WRITES=replay as the only environment variable, no key of any kind, no volume. Write aria-studio-demo as the app name for now. I will override it when I deploy. Do not run any deploy command.
+4. Update the README: add an item to the assessment-window changes, and state what the public demo can and cannot do. Update the plan, tasks, decisions and agent misses in planning.
+5. Append this piece of work to the Chinese original and the English translation in logs, with the same redaction rules.
+6. Finally run the full test suite and the build, and paste git log --oneline baseline..HEAD.
+
+Tool calls · 16:52
+
+- `update_plan` set the task list (9 steps)
+- `Bash` Inspect the structure of the frozen demo snapshot: templates, orders, media references
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 16:54
+
+In the snapshot only three templates, Kopi Loco, Visit Palawan and SlateLab, have a complete recorded run. The Kaya template in the code has none. Next I upgrade the dependencies, then I write the plan and start on replay mode.
+
+Tool calls · 16:54
+
+- `Bash` Upgrade next to 16.4.6 with an exact pin
+- `Bash` Run npm audit fix without force and report what changed and what remains
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 16:55
+
+The dependency upgrade is done: `next` is at 16.4.6 and only one advisory is left, in `zod`. Its fix needs a major upgrade to 4.x, which I leave alone as instructed. Next I run the full test suite and the build.
+
+Tool calls · 16:55
+
+- `Bash` Check where zod is used, then run the full suite and the build on the upgraded dependencies
+- `Bash` Inspect how the upgraded Next.js rewrote the generated type file and whether it is stable
+
+**Assistant** · 16:58
+
+The build passes. The generated file `next-env.d.ts` has one more line (added by the new Next.js on its own, and stable). Now I check a few places in the UI code, then I write the plan and commit the dependency upgrade.
+
+Tool calls · 16:58
+
+- `Bash` Check client imports, event tag styling and template rendering in the UI code
+- `Bash` Look at the studio page's imports, event tag rendering and template list usage
+- `Bash` Read the ends of the planning files before appending the new task
+- `Bash` Append the second task's plan and task list to the planning files
+- `Bash` Record the dependency decision and result, then commit the plan and the upgrade
+
+**Assistant** · 16:59
+
+The dependency upgrade is committed. Now I write the red tests for replay mode. First I look at the fields of one recorded run in the snapshot.
+
+Tool calls · 16:59
+
+- `Bash` Inspect one recorded run in the snapshot: fields, duel order, media files, events
+- `Read` tests/harness.ts (from line 17)
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+- `Edit` tests/harness.ts
+
+**Assistant** · 17:02
+
+The helper functions for the red tests are in place. Now I write `tests/replay.test.ts` and add the replay tier to the permission test.
+
+Tool calls · 17:02
+
+- `Write` tests/replay.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Edit` tests/demo-readonly.test.ts
+- `Bash` Run the new replay tests and the extended permission test against the unfixed code
+
+**Assistant** · 17:03
+
+The red tests fail as expected (24 failures in the two files, and the other three files are still all green). I save the output, confirm that the build passes, commit the red tests and then start the implementation.
+
+Tool calls · 17:03
+
+- `Bash` Save the sanitized red output as evidence and confirm the build type-checks the new tests
+- `Bash` Commit the failing replay tests with their captured output
+- `Edit` lib/tenant.ts
+- `Write` lib/replay.ts
+- `Read` lib/ctx.ts
+
+**Assistant** · 17:05
+
+I am implementing replay mode: the mode parsing and the module with the recorded data are written. Now I change the route guard and switch the content source in the store.
+
+Tool calls · 17:05
+
+- `Edit` lib/ctx.ts
+- `Edit` lib/ctx.ts
+- `Bash` Locate the lines in the store that the replay switch touches
+- `Bash` Print the exact store snippets that will be edited for replay mode
+
+**Assistant** · 17:05
+
+Now the store edits, one small switch at a time.
+
+Tool calls · 17:05
+
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Edit` lib/store.ts
+- `Read` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/orders/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/greenlight/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` app/api/review/route.ts
+- `Edit` .env.example
+- `Bash` Run the replay tests and the permission test after implementing replay mode
+- `Bash` Run the full suite and the build with replay mode implemented
+
+**Assistant** · 17:07
+
+The implementation is green: the full suite has 149 passing tests plus 1 expected failure, and the build passes. Before committing I review the store changes once myself.
+
+Tool calls · 17:07
+
+- `Bash` Review the full store diff for replay mode
+- `Bash` Commit the replay implementation, then run five mutation checks against the replay tests and restore each one
+- `Bash` Save the mutation-check evidence, rebuild, and write a temporary launch config for the replay server
+- `preview_start` start the dev server "aria-replay" in the browser pane
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 17:08
+
+All five reverse checks were caught by the tests, and replay mode is committed. Next I start the real server from a production build with no key at all and only `ARIA_DEMO_WRITES=replay` set, and walk through the whole flow.
+
+Tool calls · 17:09
+
+- `Bash` Walk one template through both gates against the running replay server and try every refusal
+- `browser_batch` navigate http://localhost:3417/studio, then wait, then inspect the page with JavaScript
+- `javascript_tool` inspect the page with JavaScript
+- `javascript_tool` inspect the page with JavaScript
+
+**Assistant** (progress note, stored by the app as a thinking summary) · 17:10
+
+The UI walk-through has mostly passed. Next I confirm that the "accept" step really takes effect in the UI, and I measure the memory use.
+
+Tool calls · 17:10
+
+- `Bash` Confirm the accepted order in server state and measure the server's memory
+- `preview_stop` stop the dev server
+- `Bash` Remove the temporary launch config and confirm the tree state after the live check
+- `Agent` Check current fly.toml syntax
+
+**Assistant** · 17:12
+
+Both the real server and the UI walk-through have passed (memory is about 90 MB). The Fly configuration syntax is verified against the official documentation. Now I write `fly.toml`.
+
+Tool calls · 17:12
+
+- `Write` fly.toml
+- `Bash` Show the current dockerignore and check that fly.toml parses as TOML
+- `Bash` Record replay results and decisions, then commit the planning update and the Fly configuration
+- `Bash` Check which parts of the failed multi-step command were applied
+
+**Assistant** · 17:13
+
+The command I just used, which packed several documents into one shell command, failed to parse (nothing was executed). I am switching to the editing tools and updating the files one by one.
+
+Tool calls · 17:13
+
+- `Edit` .dockerignore
+- `Edit` planning/03-decisions.md
+- `Edit` planning/04-agent-misses.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Bash` Commit the planning update and the Fly configuration as two commits
+- `Read` README.md (from line 1)
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+
+**Assistant** · 17:15
+
+The public demo section of the README is written. I am updating the other stale places, then I rehearse install, test and build once more in the background on a clean export.
+
+Tool calls · 17:15
+
+- `Bash` Locate the remaining stale lines in the README
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` README.md
+- `Edit` planning/02-tasks.md
+- `Bash` Run suite and build, then commit the README update
+- `Bash` Rehearse install, test and build from a clean export of HEAD after the dependency upgrade
+- `Bash` Re-run the log export on the grown transcript, check the committed log is an unchanged prefix, and list new t…
+- `Write` <scratch>/translations-en-part2.json
+
+**Assistant** · 17:16
+
+I am appending the second piece of work to the logs: first I merge the English translations, then I update the README of the logs.
+
+Tool calls · 17:17
+
+- `Edit` <scratch>/build-logs.mjs
+- `Bash` Run the log build with the merged translations to see which new strings still need one
+- `Write` <scratch>/translations-en-part3.json
+- `Bash` Fix the translation part ordering, rebuild both logs, and spot-check that Chinese and English entries line up
+- `Bash` Read the result of the second clean-export rehearsal and remove its directory
+
+**Assistant** · 17:18
+
+Install, test and build all pass on the clean export. Now I update the measured times in the README and the README of the logs, then I run the final export.
+
+Tool calls · 17:18
+
+- `Edit` README.md
+- `Edit` README.md
+- `Write` logs/README.md
+- `Edit` planning/04-agent-misses.md
+- `Edit` planning/02-tasks.md
+- `Edit` planning/02-tasks.md
+- `Bash` Proofread the new README sections as they stand
+- `Bash` Check whether the portrait upload control is shown outside pilot mode
+- `Edit` README.md
+- `Write` <scratch>/translations-en-part3.json
+- `Write` <scratch>/check-logs.mjs
+- `Bash` Run the final log export and the structure, redaction and prefix checks
