@@ -94,3 +94,21 @@ handoff. "Build agent" is this session.
   pushes.
 - Correction: the workflow uses `@v7` for both, and no dependency cache, so there is less to
   go wrong on the first run.
+
+## M-11. Stated elapsed time without a clock (build agent)
+
+- What happened: the plan said recon and planning "took about 45 minutes", and the README first
+  said the session took "about three hours". Both were guesses. The transcript shows 17 minutes
+  for phase 1, and the task estimates of 15 to 35 minutes turned into 1 to 6 minutes each.
+- Caught by: the timestamps in the session transcript, while exporting the log.
+- Correction: a dated correction in the plan, an "Actual" column in the task list taken from
+  commit times, and a README that states the measured duration.
+- Lesson: a number in a report needs a source. Three hours was the owner's time box, not a
+  measurement.
+
+## M-12. The first log export redacted part of a URL (build agent)
+
+- What happened: the rule for absolute paths matched the `p:/` in `http://localhost`, so the
+  log showed `htt<path>`.
+- Caught by: reading the generated log before committing it.
+- Correction: a drive letter only counts when no letter comes directly before it.

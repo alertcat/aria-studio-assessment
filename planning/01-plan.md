@@ -4,6 +4,10 @@ Written by the build session on 2026-11-12, before any code change. Inputs: `00-
 and the assessment brief. Scope is fixed by the owner's decisions in section 3. Recon and this
 plan took about 45 minutes, which leaves about 2 h 15 min of build time.
 
+Correction, added at 16:05 the same day: that estimate was wrong. The session transcript shows
+recon and plan took 17 minutes (15:10 to 15:27). I had no clock and guessed (miss M-11). The
+task estimates in `02-tasks.md` were too high for the same reason. Actual times are listed there.
+
 ## 1. Hypotheses checked against the code
 
 All three hold. Each was checked twice: by reading the code at the `baseline` tag (references

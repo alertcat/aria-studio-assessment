@@ -6,18 +6,22 @@ run, and this file is updated.
 
 Phase 1 (done before this file): hypotheses verified, plan written. No code changed.
 
-| ID | Task | Estimate | Status |
-|---|---|---|---|
-| T0 | Branch and repo hygiene | 5 min | done |
-| T1 | Test harness | 15 min | done |
-| T2 | H0: read-only demo | 25 min | done |
-| T3 | H1: gate guards | 35 min | done |
-| T4 | H2: pin the gap | 5 min | done |
-| T5 | Check the real server | 5 min | done |
-| T6 | CI workflow (optional) | 5 min | done, not yet run on GitHub |
-| T7 | README top section | 15 min | done |
-| T8 | Session logs | 20 min | todo |
-| T9 | Final verification | 5 min | todo |
+| ID | Task | Estimate | Actual | Status |
+|---|---|---|---|---|
+| T0 | Branch and repo hygiene | 5 min | 6 min | done |
+| T1 | Test harness | 15 min | 4 min | done |
+| T2 | H0: read-only demo | 25 min | 4 min | done |
+| T3 | H1: gate guards | 35 min | 5 min | done |
+| T4 | H2: pin the gap | 5 min | 1 min | done |
+| T5 | Check the real server | 5 min | 3 min | done |
+| T6 | CI workflow (optional) | 5 min | 1 min | done, not yet run on GitHub |
+| T7 | README top section | 15 min | 3 min | done |
+| T8 | Session logs | 20 min | 10 min | done |
+| T9 | Final verification | 5 min | 2 min | see the result at the end of this file |
+
+"Actual" is agent wall-clock time, taken from the commit times. The estimates were guesses made
+without a clock and were far too high (miss M-11). Phase 1 took 17 minutes (15:10 to 15:27) and
+the plan was approved at 15:34.
 
 ## T0. Branch and repo hygiene
 
@@ -224,6 +228,15 @@ git grep -n -I -E "Users[\\/]|AppData|sk-[A-Za-z0-9]{20,}|0x[a-fA-F0-9]{64}|[A-Z
 ```
 
 Expected: no output.
+
+Result: done. A script read the local transcript and wrote the Chinese original. The English
+file comes from the same entries plus one hand-written translation per Chinese text. Both files
+have the same entries in the same order and identical tool-call lines. The redaction check
+above prints nothing. The first export redacted part of a URL (miss M-12), which was fixed
+before the commit. The export also showed that my time estimates were wrong (miss M-11).
+
+The log stops where the export ran. It does not contain the commit of the log files, the final
+verification below, or the closing summary.
 
 ## T9. Final verification
 

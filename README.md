@@ -4,9 +4,10 @@ A one-person media studio run by AI agents, with a human gate on every dollar.
 
 ## Assessment window: what changed
 
-Everything after the `baseline` tag was done on 2026-11-12 in one session of about three hours
-with Claude Code as the coding agent. The project itself is older (see "Status of this
-repository" below). The whole change is `git diff baseline..HEAD`. The working notes are in
+Everything after the `baseline` tag was done on 2026-11-12 in one session with Claude Code as
+the coding agent. The time box was three hours. The session took a little over one hour, and
+the log has the timestamps. The project itself is older (see "Status of this repository"
+below). The whole change is `git diff baseline..HEAD`. The working notes are in
 [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
 
 ### What changed
