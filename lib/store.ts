@@ -9,7 +9,8 @@ import { chainEnabled, settleUsdc } from './chain'
 import { startEscrowWatch } from './escrowWatch'
 import { TALENTS, allTalents, addCustomTalent, talentAssetUri, warmTalents } from './talent'
 import { DEFAULT_SPEC, estimateUsd, modelById, normalizeSpec, specLabel, type Spec } from './models'
-import { PILOT, type Tenant, defaultTenant } from './tenant'
+import { PILOT, type Tenant, defaultTenant, demoWrites } from './tenant'
+import { REPLAY_MAX_ORDERS, REPLAY_RENDER_STEP_MS, recordingFor } from './replay'
 import { refusal, type GateAction } from './gates'
 
 // ============================== types ==============================
@@ -244,6 +245,35 @@ const mediaKey = (kind: 'video' | 'poster', ...parts: string[]) =>
 /** Customers pay per render and expect the concept they approved: the pilot never replays a cached cut. */
 const REPLAY_MEDIA = !PILOT
 
+/**
+ * The keyless public demo (ARIA_DEMO_WRITES=replay). The pipeline below stays the
+ * same, but directors, jurors and the render are not asked: their answers come from
+ * a recorded run in lib/replay.ts. Nothing is loaded from or saved to disk, nothing
+ * is settled on chain, and no external client is called.
+ */
+const REPLAY = !PILOT && demoWrites() === 'replay'
+
+/** The recorded run behind an order. It throws rather than fall back to a live call. */
+function replayed(o: Order) {
+  const rec = recordingFor(o.title)
+  if (!rec) throw new Error('replay demo: no recorded run for this brief')
+  return rec
+}
+/** What the director pitched in the recorded run, in the shape a live answer has. */
+function replayedConcept(o: Order, agentId: string): string {
+  const draft = replayed(o).drafts.find((d) => d.agentId === agentId)
+  if (!draft) throw new Error('replay demo: the recorded run has no concept from this director')
+  return JSON.stringify(draft.concept)
+}
+/** What the juror decided in the recorded run, in the shape a live verdict has. */
+function replayedVerdict(o: Order, a: string, b: string, judge: string): string {
+  const duel = replayed(o).duels.find((d) => d.a === a && d.b === b && d.judge === judge)
+  if (!duel) throw new Error('replay demo: the recorded run has no verdict for this duel')
+  return JSON.stringify({ winner: duel.winner === b ? 'B' : 'A', reason: duel.reason })
+}
+/** In replay mode only the newest orders are kept, so an order can vanish while it is in flight. */
+const dropped = (o: Order) => !S.state.orders.includes(o)
+
 type Store = {
   state: State
   agents: AgentDef[]
@@ -262,6 +292,7 @@ function createStore(): Store {
     seq: 1,
     saveTimer: null,
   }
+  if (REPLAY) return store // orders live in memory only: nothing is loaded, nothing is saved
   try {
     const disk = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8'))
     if (disk.schema === 3) {
@@ -320,7 +351,7 @@ function getStore() {
 }
 
 function saveSoon() {
-  if (S.saveTimer) return
+  if (REPLAY || S.saveTimer) return
   S.saveTimer = setTimeout(() => {
     S.saveTimer = null
     try {
@@ -336,6 +367,8 @@ function saveSoon() {
 }
 
 function ev(tag: string, text: string, orderId?: string) {
+  // an order that the replay demo has dropped must not keep writing to the log
+  if (REPLAY && orderId && !S.state.orders.some((o) => o.id === orderId)) return
   S.state.events.unshift({ t: Date.now(), tag, text, orderId })
   if (S.state.events.length > 300) S.state.events.length = 300
   saveSoon()
@@ -454,12 +487,14 @@ async function conceptOne(o: Order, w: AgentDef): Promise<Draft> {
   w.status = 'working'
   ev(w.tag, `${w.name} is concepting "${o.title}"${o.revision ? ` rev ${o.revision}` : ''}`, o.id)
   const key = cacheKey(tenant.id, 'concept', o.title, w.id, o.revision)
-  const { content, cached } = await reliable(
-    key,
-    () =>
-      chatOpenAI({ system: workerSystem(w, S.state.playbook, o), user: orderUser(o), maxTokens: 2200 }),
-    () => JSON.stringify(fallbackConcept(w, o)),
-  )
+  const { content, cached } = REPLAY
+    ? { content: replayedConcept(o, w.id), cached: true }
+    : await reliable(
+        key,
+        () =>
+          chatOpenAI({ system: workerSystem(w, S.state.playbook, o), user: orderUser(o), maxTokens: 2200 }),
+        () => JSON.stringify(fallbackConcept(w, o)),
+      )
   await pace(cached, 2000, 3500)
   w.status = 'idle'
   const concept = parseConcept(content, w, o)
@@ -482,11 +517,13 @@ async function runJury(o: Order) {
       const A = o.drafts[i]
       const B = o.drafts[j]
       const key = cacheKey(tenant.id, 'duel', o.title, A.agentId, B.agentId, judge.id, o.revision)
-      const { content, cached } = await reliable(
-        key,
-        () => chatClaude({ system: judgeSystem(judge, o), user: duelUser(o, A, B) }),
-        fallbackVerdict,
-      )
+      const { content, cached } = REPLAY
+        ? { content: replayedVerdict(o, A.agentId, B.agentId, judge.name), cached: true }
+        : await reliable(
+            key,
+            () => chatClaude({ system: judgeSystem(judge, o), user: duelUser(o, A, B) }),
+            fallbackVerdict,
+          )
       await pace(cached, 800, 1600)
       let winner = A.agentId
       let reason = 'stronger concept coverage'
@@ -547,11 +584,12 @@ function greenlightOrder(orderId: string, agentId?: string, talentId?: string, a
     ev('ERR', 'Render refused: the request carried no customer key', o.id)
     return
   }
-  const pick = agentId && o.drafts.some((d) => d.agentId === agentId) ? agentId : o.ranking[0].agentId
+  // Replay mode has one recorded cut per brief: the jury pick, at the default spec, with no talent.
+  const pick = !REPLAY && agentId && o.drafts.some((d) => d.agentId === agentId) ? agentId : o.ranking[0].agentId
   o.winnerAgentId = pick
-  o.spec = normalizeSpec(spec ?? o.spec ?? DEFAULT_SPEC)
+  o.spec = normalizeSpec(REPLAY ? DEFAULT_SPEC : (spec ?? o.spec ?? DEFAULT_SPEC))
   const roster = allTalents(DATA_DIR)
-  o.talentId = talentId && modelById(o.spec.model)?.talent && roster.some((t) => t.id === talentId) ? talentId : undefined
+  o.talentId = !REPLAY && talentId && modelById(o.spec.model)?.talent && roster.some((t) => t.id === talentId) ? talentId : undefined
   agent(pick).reputation += 2
   const overrode = pick !== o.ranking[0].agentId
   ev(
@@ -561,6 +599,38 @@ function greenlightOrder(orderId: string, agentId?: string, talentId?: string, a
   )
   saveSoon()
   void runProduction(o, apiKey)
+}
+
+/**
+ * Replay mode: the cut and the poster were rendered when the run was recorded. Show
+ * the progress in five short steps, then attach the recorded files.
+ */
+async function replayProduction(o: Order) {
+  try {
+    const rec = replayed(o)
+    for (const pct of [20, 40, 60, 80]) {
+      await sleep(REPLAY_RENDER_STEP_MS)
+      if (dropped(o)) return
+      o.videoProgress = pct
+      ev('PROD', `Rendering ${pct}%`, o.id)
+      if (pct === 40 && rec.posterFile) {
+        o.posterFile = rec.posterFile
+        o.cogsUsd += COST.poster
+        ev('IMG', 'Campaign poster ready (recorded)', o.id)
+      }
+    }
+    await sleep(REPLAY_RENDER_STEP_MS)
+    if (dropped(o)) return
+    o.videoFile = rec.videoFile
+    o.videoProgress = 100
+    o.cogsUsd += renderCost(o)
+    o.status = 'review'
+    ev('GATE', o.posterFile ? `Cut and key visual are ready for your acceptance` : `Cut is ready for your acceptance`, o.id)
+  } catch (e) {
+    o.videoProgress = undefined
+    o.videoNote = `Replay failed (${(e as Error).message.slice(0, 80)}).`
+    o.status = 'review'
+  }
 }
 
 async function runProduction(o: Order, apiKey?: string) {
@@ -573,6 +643,10 @@ async function runProduction(o: Order, apiKey?: string) {
   o.videoNote = undefined
   o.videoTaskId = undefined
   o.videoInterrupted = undefined
+  if (REPLAY) {
+    ev('PROD', `Replaying the recorded render of "${winner.concept.concept}" (${specLabel(spec)})`, o.id)
+    return replayProduction(o)
+  }
   ev('PROD', `Studio rendering "${winner.concept.concept}" (${specLabel(spec)})${spec.poster === false ? '' : ' plus campaign poster (gpt-image-2)'}`, o.id)
   saveSoon()
 
@@ -720,7 +794,9 @@ async function runPipeline(orderId: string) {
     o.status = 'concepting'
     o.error = undefined
     saveSoon()
+    if (REPLAY) ev('REPLAY', 'Replay demo: the concepts, verdicts and footage of this order come from a recorded run. No model is called.', o.id)
     o.drafts = await Promise.all(WORKERS.map((w) => conceptOne(o, agent(w.id))))
+    if (REPLAY && dropped(o)) return // pushed out by newer orders while the directors were pitching
     await runJury(o)
   } catch (e) {
     o.error = (e as Error).message
@@ -731,6 +807,7 @@ async function runPipeline(orderId: string) {
 }
 
 async function runRevision(orderId: string, feedback: string, apiKey?: string, lang?: 'zh' | 'en') {
+  if (REPLAY) return // a revision needs a director and a new render, and replay mode has neither
   const o = S.state.orders.find((x) => x.id === orderId)
   // Only a cut that waits at Gate 2 can be sent back. Without this check a delivered
   // order could be revised, approved again and booked twice, and an order that is
@@ -778,6 +855,7 @@ async function runRevision(orderId: string, feedback: string, apiKey?: string, l
 
 /** Fetch an interrupted render's result from upstream. Nothing new is submitted, so nothing new is charged. */
 async function resumeRender(orderId: string, apiKey?: string): Promise<{ ok: boolean; status: string; note?: string }> {
+  if (REPLAY) return { ok: false, status: 'replay demo' } // there is no upstream task to fetch
   const o = S.state.orders.find((x) => x.id === orderId)
   if (!o) return { ok: false, status: 'not found' }
   // This function moves the order to review or back to greenlight, so it must not run
@@ -831,16 +909,18 @@ function approveOrder(orderId: string) {
     .createHash('sha256')
     .update(o.id + o.title)
     .digest('hex')
+  // the replay demo never transfers anything, whatever keys the host may hold
+  const settleOnChain = !PILOT && !REPLAY && chainEnabled()
   o.invoice = {
     id: `INV-2026-${String(seq).padStart(4, '0')}`,
     paidAt: Date.now(),
-    ref: !PILOT && chainEnabled()
+    ref: settleOnChain
       ? 'Settling USDC on Base Sepolia...'
       : PILOT
         ? 'accepted at the gate'
         : `0x${hash.slice(0, 40)} (Base Sepolia, simulated settlement)`,
   }
-  if (!PILOT && chainEnabled()) {
+  if (settleOnChain) {
     void (async () => {
       try {
         const r = await settleUsdc(o.amountUsd)
@@ -898,6 +978,8 @@ function createOrder(input: {
     ranking: [],
   }
   S.state.orders.unshift(o)
+  // replay mode keeps orders in memory only, so it keeps a fixed number: the oldest goes
+  if (REPLAY && S.state.orders.length > REPLAY_MAX_ORDERS) S.state.orders.length = REPLAY_MAX_ORDERS
   ev(
     PILOT ? 'BRIEF' : 'ESCROW',
     PILOT
@@ -917,8 +999,13 @@ function resetCompany() {
   saveSoon()
 }
 
+/** The briefs a visitor can fire. In replay mode only the ones that have a recorded run. */
+function templates() {
+  return REPLAY ? TEMPLATES.filter((t) => recordingFor(t.title)) : TEMPLATES
+}
+
 function publicState() {
-  if (!PILOT) startEscrowWatch(ev)
+  if (!PILOT && !REPLAY) startEscrowWatch(ev)
   return {
     tenant: { id: tenant.id, pilot: PILOT },
     pilot: PILOT,
@@ -927,7 +1014,7 @@ function publicState() {
     state: S.state,
     agents: S.agents,
     judges: JUDGES.map((j) => j.name),
-    templates: TEMPLATES,
+    templates: templates(),
     unitCosts: UNIT_COSTS,
     estimate: PILOT_ESTIMATE,
     talents: allTalents(DATA_DIR),
@@ -935,6 +1022,7 @@ function publicState() {
 }
 
   function warm(apiKey?: string) {
+    if (REPLAY) throw new Error('not available in the replay demo')
     if (PILOT && !apiKey) throw new Error('key required')
     return warmTalents({ apiKey, dataDir: DATA_DIR })
   }
@@ -951,6 +1039,7 @@ function publicState() {
 
   /** Register the tenant's own synthetic portrait as a talent. Uses the key from the request only. */
   async function addTalent(input: { blob: Buffer; ext: string; name: string; apiKey?: string }) {
+    if (REPLAY) throw new Error('not available in the replay demo')
     if (PILOT && !input.apiKey) throw new Error('key required')
     const t = await addCustomTalent({
       blob: input.blob,
@@ -978,6 +1067,7 @@ function publicState() {
     createOrder,
     resetCompany,
     publicState,
+    templates,
     warm,
     addTalent,
     activeCount,

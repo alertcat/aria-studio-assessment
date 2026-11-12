@@ -1,4 +1,5 @@
-import { storeForRequest, unauthorized, spendKey, readOnlyDemo, refused } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo, refused, inReplay, replayRefusal } from '@/lib/ctx'
+import { REPLAY_REASONS } from '@/lib/replay'
 import { providerBalance, PILOT } from '@/lib/tenant'
 import { LIMITS, globalActiveCount } from '@/lib/store'
 import { normalizeSpec, preChargeUsd } from '@/lib/models'
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic'
 // key, the balance is checked against the estimate for the chosen spec first, and
 // the key is handed to the render job in memory only.
 export async function POST(req: Request) {
-  const readOnly = readOnlyDemo()
+  const readOnly = readOnlyDemo('', true)
   if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
@@ -19,6 +20,11 @@ export async function POST(req: Request) {
   const orderId = String(body.orderId)
   const illegal = st.gate(orderId, 'greenlight')
   if (illegal) return refused(illegal)
+  if (inReplay() && body.agentId) {
+    // the recorded cut belongs to the jury pick, so no other concept can be shown
+    const juryPick = st.getStore().state.orders.find((o) => o.id === orderId)?.ranking[0]?.agentId
+    if (String(body.agentId) !== juryPick) return replayRefusal(REPLAY_REASONS.override, 'POST')
+  }
   const spec = normalizeSpec(body.spec)
   const { key, error } = spendKey(req, st)
   if (error) return error

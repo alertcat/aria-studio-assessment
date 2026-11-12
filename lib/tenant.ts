@@ -11,6 +11,18 @@ import { renderBase } from './provider'
 // tenant that uses the server's own key from the environment.
 
 export const PILOT = process.env.ARIA_MODE === 'pilot'
+
+export type DemoWrites = 'off' | 'replay' | 'on'
+
+/**
+ * What demo mode accepts, from ARIA_DEMO_WRITES: nothing (the default), a keyless
+ * replay of recorded runs ("replay"), or every write ("1"). Any other value is
+ * "off", so a typo fails closed. Pilot mode does not use the variable.
+ */
+export function demoWrites(): DemoWrites {
+  const value = process.env.ARIA_DEMO_WRITES
+  return value === '1' ? 'on' : value === 'replay' ? 'replay' : 'off'
+}
 export const DATA_ROOT = process.env.DATA_ROOT || path.join(process.cwd(), 'data')
 const COOKIE = 'aria_tenant'
 const COOKIE_TTL_S = 60 * 60 * 12

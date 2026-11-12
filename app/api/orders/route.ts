@@ -1,5 +1,6 @@
-import { storeForRequest, unauthorized, readOnlyDemo } from '@/lib/ctx'
-import { TEMPLATES, LIMITS, globalActiveCount } from '@/lib/store'
+import { storeForRequest, unauthorized, readOnlyDemo, inReplay, replayRefusal } from '@/lib/ctx'
+import { LIMITS, globalActiveCount } from '@/lib/store'
+import { REPLAY_REASONS } from '@/lib/replay'
 import { PILOT } from '@/lib/tenant'
 
 export const runtime = 'nodejs'
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
 // budget: one job at a time, a daily cap, an overall cap, and a studio-wide
 // concurrency ceiling. Renders are on the customer's key and gated elsewhere.
 export async function POST(req: Request) {
-  const readOnly = readOnlyDemo()
+  const readOnly = readOnlyDemo('', true)
   if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
@@ -28,7 +29,10 @@ export async function POST(req: Request) {
     }
   }
   const body = await req.json().catch(() => ({}))
-  const tpl = typeof body.template === 'number' ? TEMPLATES[body.template] : null
+  // the index refers to the list this store sends to the client
+  const tpl = typeof body.template === 'number' ? st.templates()[body.template] : null
+  // the replay demo has recorded runs for its templates and for nothing else
+  if (inReplay() && !tpl) return replayRefusal(REPLAY_REASONS.custom, 'POST')
   const input = tpl ?? {
     client: body.client,
     title: body.title,
