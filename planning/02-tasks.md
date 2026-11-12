@@ -14,7 +14,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | T3 | H1: gate guards | 35 min | done |
 | T4 | H2: pin the gap | 5 min | done |
 | T5 | Check the real server | 5 min | done |
-| T6 | CI workflow (optional) | 5 min | todo |
+| T6 | CI workflow (optional) | 5 min | done, not yet run on GitHub |
 | T7 | README top section | 15 min | todo |
 | T8 | Session logs | 20 min | todo |
 | T9 | Final verification | 5 min | todo |

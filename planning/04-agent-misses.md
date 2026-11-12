@@ -85,3 +85,12 @@ handoff. "Build agent" is this session.
 - Correction: one more line renders the same notice in the demo branch of the header. Checked
   again in the running app: the sentence appears after a refused click.
 - Lesson: a change is not verified until it has been seen working where the user sees it.
+
+## M-10. Was about to pin GitHub Actions versions from memory (build agent)
+
+- What happened: I was going to write `actions/checkout@v4` and `actions/setup-node@v4`. A
+  lookup of the latest releases showed both are at v7.
+- Caught by: checking before writing, because the workflow cannot be run before the owner
+  pushes.
+- Correction: the workflow uses `@v7` for both, and no dependency cache, so there is less to
+  go wrong on the first run.

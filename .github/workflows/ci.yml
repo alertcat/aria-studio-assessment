@@ -1,0 +1,23 @@
+name: CI
+
+# The same three commands a reviewer runs locally. No secrets: the test suite
+# mocks every external client and the build needs no environment variables.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
