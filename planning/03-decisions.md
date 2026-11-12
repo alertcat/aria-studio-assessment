@@ -106,3 +106,17 @@ branch in the studio's `post()` that puts the server's reason sentence into the 
 line. Without it a refused click does nothing visible. Kept out on purpose: hiding or disabling
 the write controls, a notice line for the landing page, and a Chinese translation of the
 sentence (the translation helper falls back to the English text).
+
+## D-17. Baseline dependency advisories are reported, not fixed (agent)
+
+`npm audit` lists 8 packages with advisories in the baseline tree, among them `next` 16.2.4
+(critical, fixed in 16.4.6) and `postcss`, `zod`, `sharp`. Adding Vitest changed nothing: the
+report is identical before and after. Upgrading Next.js is the right fix, but it changes the
+framework under an app with no UI tests, and the owner limited this window to one new
+dependency. It is listed in the README as a next step.
+
+## D-18. Test fixtures are derived, not listed (agent)
+
+Following the owner's rule for the route list: the set of environment variables that tests
+remove comes from `.env.example`, and the pilot session in tests is built with the app's own
+cookie and tenant functions. Nothing in the harness has to be kept in step by hand.

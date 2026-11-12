@@ -9,7 +9,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | ID | Task | Estimate | Status |
 |---|---|---|---|
 | T0 | Branch and repo hygiene | 5 min | done |
-| T1 | Test harness | 15 min | todo |
+| T1 | Test harness | 15 min | done |
 | T2 | H0: read-only demo | 25 min | todo |
 | T3 | H1: gate guards | 35 min | todo |
 | T4 | H2: pin the gap | 5 min | todo |
@@ -64,6 +64,11 @@ git diff baseline..HEAD --stat -- package.json
 ```
 
 Expected: one new devDependency (`vitest`) and one new script (`test`).
+
+Result: done. 8 self-tests pass in about 1 second. `npm run build` passes and type-checks the
+test files. The lockfile gained 85 packages, removed none, and changed one existing version
+(`@types/estree` 1.0.9 to 1.0.10, required by the new Rollup). `npm audit` reports the same 8
+findings before and after (decision D-17). A run leaves no temp directory behind.
 
 ## T2. H0: read-only demo
 
