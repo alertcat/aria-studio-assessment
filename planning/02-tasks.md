@@ -11,8 +11,8 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | T0 | Branch and repo hygiene | 5 min | done |
 | T1 | Test harness | 15 min | done |
 | T2 | H0: read-only demo | 25 min | done |
-| T3 | H1: gate guards | 35 min | todo |
-| T4 | H2: pin the gap | 5 min | todo |
+| T3 | H1: gate guards | 35 min | done |
+| T4 | H2: pin the gap | 5 min | done |
 | T5 | Check the real server | 5 min | todo |
 | T6 | CI workflow (optional) | 5 min | todo |
 | T7 | README top section | 15 min | todo |
@@ -117,6 +117,16 @@ npx vitest run tests/gates.test.ts
 
 Expected: all tests pass, including "a delivered order accepts no further action".
 
+Result: done. Red run: 31 failed, 27 passed (`planning/evidence/T3-red.txt`). The 27 that passed
+pin behaviour that was already right. After the fix: 58 passed, full suite 114 passed, build
+passes. `lib/store.ts` changed by 22 lines, all checks. Extra check: with `revise` wrongly allowed
+from `delivered` in the table, three tests fail (the table cell, the story, the route). The
+change was reverted.
+
+Difference from the plan: the table is tested through the store and the routes, not with a
+separate unit test of `canApply`. That kept the red test compiling against the old code, so the
+build stayed green on the red commit.
+
 ## T4. H2: pin the gap
 
 - `tests/settlement-gap.test.ts`: one `it.fails` test for "no revenue when the transfer fails".
@@ -128,6 +138,9 @@ npx vitest run tests/settlement-gap.test.ts
 ```
 
 Expected: 1 test passes (an expected failure). It will fail once H2 is fixed.
+
+Result: done. "1 passed, 1 expected fail". A plain test over the same setup sits next to the
+expected failure, so it cannot pass because its setup broke.
 
 ## T5. Check the real server
 

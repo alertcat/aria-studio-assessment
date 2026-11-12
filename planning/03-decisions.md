@@ -67,8 +67,15 @@ ties the fix to a framework file convention, and does not exist in a static expo
 ## D-10. One transition table, enforced in the store and reported by the routes (agent)
 
 `lib/gates.ts` holds the table. The store functions refuse illegal calls, so any future caller is
-covered. The routes run the same check immediately before acting and answer 404 or 409. Before,
-an illegal call was answered with `{ ok: true }`.
+covered. Their signatures did not change. The store got one new method, `gate()`, and the three
+gate routes call it before any provider call to answer 404 or 409. Before, an illegal call was
+answered with `{ ok: true }`.
+
+Known limit: in pilot mode the route awaits a balance lookup between its check and the store
+call. Two requests that race across that lookup both pass the route check. The store then
+accepts one and silently ignores the other, exactly as the baseline did. No double render, but
+the loser is told `{ ok: true }`. Rejected: a second route check after the lookup, which adds
+lines to fix a response nobody acts on.
 
 ## D-11. `resume` joins the table (agent)
 
