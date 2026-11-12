@@ -2,8 +2,8 @@
 
 A one-person media studio run by AI agents, with a human gate on every dollar.
 
-**Live demo for reviewers: https://aria-studio-demo.fly.dev/studio** (a replay of recorded
-runs, no key needed, see "Public demo" below).
+**Live demo for reviewers: https://aria-studio-demo.fly.dev** (a replay of recorded runs, no
+key needed, see "Public demo" below).
 
 ## Assessment window: what changed
 
@@ -29,11 +29,13 @@ in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
    a delivered order could be sent back, approved again and booked twice, and an order that was
    still rendering could start a second render, which in pilot mode is a second charge on the
    customer's key.
-3. **A test suite where there was none.** 150 tests in a few seconds, with no network, no
+3. **A test suite where there was none.** 157 tests in a few seconds, with no network, no
    key and no real data directory ([`tests/setup.ts`](tests/setup.ts)). The permission test
    keeps no list of routes. It walks `app/`, imports every route file and tests every write
    method it exports, so a route added later is covered the day it is added.
-4. **The studio shows why a write was refused.** This is the only UI change.
+4. **Two small UI changes in the studio.** It shows why a write was refused. And it starts
+   dark and in English on every first visit: it used to follow the system colour scheme, so
+   the first look at the live demo was a light page.
 5. **A CI workflow** that runs install, test and build. It runs on every push and pull
    request.
 6. **A public demo that needs no key.** `ARIA_DEMO_WRITES=replay` opens three writes: a
@@ -49,14 +51,14 @@ in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
 `ARIA_DEMO_WRITES=replay` sits between read-only and full writes. It is meant for a public page
 on a host that holds no key. That page is live:
 
-- Reviewers, start here: https://aria-studio-demo.fly.dev/studio
-- Landing page: https://aria-studio-demo.fly.dev
+- Reviewers, start here, on the site: https://aria-studio-demo.fly.dev
+- The control room behind it: https://aria-studio-demo.fly.dev/studio
 
 [`fly.toml`](fly.toml) is the configuration of that host: one 256 MB machine in Singapore
 with no secret and no volume. It stops when idle, so the first request after a pause takes a
 few seconds.
 
-What a visitor can do, on `/studio`:
+What a visitor can do, on the site or in the studio:
 
 - Fire one of three template briefs: Kopi Loco, Visit Palawan, SlateLab.
 - Watch three directors pitch and the jury rank them. That takes about 4 to 10 seconds.
@@ -70,8 +72,8 @@ the event log of each order says so. The code that paces, ranks, books and moves
 through the two gates is the code the live pipeline runs.
 
 What a visitor cannot do. Each of these requests is refused with a 405 and one sentence that
-starts with "Replay demo:". When the studio sends such a request, it shows the sentence in its
-header:
+starts with "Replay demo:". The studio shows that sentence in its header. The site has no
+notice line, so a refused click there does nothing visible:
 
 - Write a custom brief. A template without a recorded run (Kaya & Co.) is not offered at all.
 - Override the jury's pick. Only the recorded cut exists.
@@ -101,7 +103,7 @@ In PowerShell:
 $env:ARIA_DEMO_WRITES='replay'; npm run dev
 ```
 
-Then open http://localhost:3000/studio.
+Then open http://localhost:3000.
 
 ### Verify in about a minute, no key needed
 
@@ -115,7 +117,7 @@ npm install
 npm test
 ```
 
-Expected: `Test Files 5 passed (5)` and `Tests 149 passed | 1 expected fail (150)`. The expected
+Expected: `Test Files 6 passed (6)` and `Tests 156 passed | 1 expected fail (157)`. The expected
 failure is the known gap described under "Weakest part" below.
 
 Measured twice on a clean export of this branch (Node 20.18, Windows, warm npm cache): install
@@ -306,7 +308,7 @@ Then run `npm run dev` and open `/studio`. In demo mode every write is refused w
 
 This list describes the `baseline` tag. The note after each item says where it stands now.
 
-- No automated tests and no CI. Now: 150 tests and a CI workflow.
+- No automated tests and no CI. Now: 157 tests and a CI workflow.
 - `lib/store.ts` is about 1,000 lines. Now: unchanged.
 - Demo mode treats every caller as the default tenant. Now: still true, but demo mode is
   read-only unless `ARIA_DEMO_WRITES` is set to `replay` or `1`.

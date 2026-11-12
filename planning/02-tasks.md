@@ -470,3 +470,55 @@ CI, merge with a merge commit, keep the branch.
 
 These steps come after this commit, so their results cannot be in this file. They are in the
 pull request and on the repository's Actions page.
+
+Result, added with the next task: done. Repository `alertcat/aria-studio-assessment`, public,
+default branch `main`. Pull request #1 was green on both runs (push and pull request, on
+ubuntu with Node 22) and was merged with a merge commit. The CI run on `main` passed. The
+live checks passed again after the merge, 15 of 15.
+
+# Fourth task: defaults of the live demo
+
+Added 2026-11-12 after the owner's first look at the live demo. The request: the studio
+starts in dark mode and in English, and the entry for reviewers is the site, not the studio.
+
+| ID | Task | Status |
+|---|---|---|
+| T19 | Studio defaults and reviewer entry | done |
+| T20 | Publish and redeploy | follows this commit |
+
+## T19. Studio defaults and reviewer entry
+
+- The cause: the studio took its theme from the system colour scheme when there was no link
+  and no saved choice. The owner's system is light, so the live studio opened light. English
+  was already the default.
+- Red first: the start logic moved, unchanged, from an effect in the page into `lib/prefs.ts`,
+  and `tests/studio-prefs.test.ts` describes a first visit by someone whose system is light
+  and whose browser is Chinese. 3 failed, 4 passed (`planning/evidence/T19-red.txt`).
+- Green: without a link and without a saved choice the studio is dark and English. The system
+  setting is no longer read. A link (`#theme=`, `?lang=`) and the visitor's own toggle still
+  win.
+- The README names the site as the entry for reviewers. The studio is one click from there.
+
+Acceptance:
+
+```bash
+npx vitest run tests/studio-prefs.test.ts
+```
+
+Expected: 7 tests pass.
+
+Result: done. 7 passed, full suite 156 passed and 1 expected failure, build passes. Checked in
+the running production build with the browser set to a light system scheme and a Chinese
+locale: the studio came up with `data-theme="dark"`, a dark background and the English UI.
+On the site, a template went through both gates by clicking: Gate 1 after 8.2 seconds,
+"Greenlight", the recorded cut after 4.6 seconds, "Accept and settle", status `delivered`.
+The rendered site has no external link and no e-mail address.
+
+Known and unchanged: the site has no notice line. An override, a revision or a custom brief
+is refused there without a visible reason. The studio shows the reason.
+
+## T20. Publish and redeploy
+
+Steps: push the branch, pull request into `main`, wait for CI, merge with a merge commit,
+deploy `main` to the same Fly.io app, run the live checks. The results are in pull request #2
+and on the Actions page.

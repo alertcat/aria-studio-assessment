@@ -10,7 +10,7 @@ owner gave a second task after the first one was finished.
 |---|---|---|
 | 1 | from 15:10 | The handoff is checked against the code, the plan is written and approved at 15:34, then tests, fixes, live check, CI, README and the first log export |
 | 2 | from 16:48 | A follow-up task: dependency upgrade, the keyless replay demo, `fly.toml`, README and planning updates, and this second export |
-| 3 | from 17:44 | The release: deployment to Fly.io, push to GitHub, pull request and merge. Not in the log, see below |
+| 3 | from 17:44 | The release: deployment to Fly.io, push to GitHub, pull request and merge. Then one late change after the owner's first look at the live demo (the studio starts dark and in English, the site is the entry), with its own pull request and redeploy. Not in the log, see below |
 
 It is the only session of the window. The recon session that wrote
 `planning/00-recon-handoff.md` is not here: its raw log also covers unrelated private work, as
@@ -22,8 +22,10 @@ of scope for the assessment and has no logs in this repository.
 The deployment to Fly.io, the push to GitHub, the pull request and the merge were done after
 the second export, as a third and short part of the same session. That part was not exported,
 because it works with the owner's credentials: the GitHub credential in the credential manager
-and the Fly.io login. What was done there and how it was checked is recorded in
-`planning/02-tasks.md` (T17 and T18), in the pull request and on the repository's Actions page.
+and the Fly.io login. It also holds one late change to the studio's defaults, which was
+published and deployed the same way. What was done there and how it was checked is recorded in
+`planning/02-tasks.md` (T17 to T20), in the two pull requests and on the repository's Actions
+page.
 
 ## Files
 
