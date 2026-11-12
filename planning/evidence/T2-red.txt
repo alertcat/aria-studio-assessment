@@ -1,0 +1,224 @@
+# T2 red run: tests/demo-readonly.test.ts against the code before the fix
+# Command: npx vitest run tests/demo-readonly.test.ts --reporter=verbose
+# Captured 2026-11-12. ANSI colours removed, the repo path replaced with <repo>.
+
+
+ RUN  v4.1.12 <repo>
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+ ✓ tests/demo-readonly.test.ts > route discovery > finds write handlers in the app directory 8ms
+ ✓ tests/demo-readonly.test.ts > route discovery > has no stale exemption 1ms
+ × tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 20ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, ARIA_DEMO_WRITES=1: not refused 5ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, no session: 401 as before 5ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, logged in: not refused 9ms
+ × tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, logged in: not refused 7ms
+ × tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 3ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, ARIA_DEMO_WRITES=1: not refused 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, logged in: not refused 6ms
+ × tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 3ms
+   → expected 200 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, ARIA_DEMO_WRITES=1: not refused 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, logged in: not refused 6ms
+stderr | tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+ × tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 12ms
+   → expected 200 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, logged in: not refused 6ms
+ × tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 3ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, logged in: not refused 7ms
+ × tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 3ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, logged in: not refused 7ms
+ × tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+   → expected 200 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, logged in: not refused 6ms
+ × tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+   → expected 400 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, ARIA_DEMO_WRITES=1: not refused 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, no session: 401 as before 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, logged in: not refused 5ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/login' (exempt: 'demo mode has no login, it answers { …') > demo mode, default: stays open and has no side effect 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/logout' (exempt: 'it only clears the session cookie in …') > demo mode, default: stays open and has no side effect 10ms
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "0" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "true" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "yes" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "on" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value " 1" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "1 " does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "" does not enable writes 3ms
+   → expected 400 to be 405 // Object.is equality
+ × tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > logs one warning when it is on, however many writes follow 6ms
+   → expected [] to have a length of 1 but got +0
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+AssertionError: expected 400 to be 405 // Object.is equality
+
+- Expected
++ Received
+
+- 405
++ 400
+
+ ❯ tests/demo-readonly.test.ts:98:24
+     96|   it('demo mode, default: refused with 405, an Allow header and a reas…
+     97|     const res = await call(h)
+     98|     expect(res.status).toBe(405)
+       |                        ^
+     99|     // Allow names the read methods this route really exports, and onl…
+    100|     const mod = await load(h.spec)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens
+AssertionError: expected 200 to be 405 // Object.is equality
+
+- Expected
++ Received
+
+- 405
++ 200
+
+ ❯ tests/demo-readonly.test.ts:98:24
+     96|   it('demo mode, default: refused with 405, an Allow header and a reas…
+     97|     const res = await call(h)
+     98|     expect(res.status).toBe(405)
+       |                        ^
+     99|     // Allow names the read methods this route really exports, and onl…
+    100|     const mod = await load(h.spec)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "0" does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "true" does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "yes" does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "on" does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value " 1" does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "1 " does not enable writes
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "" does not enable writes
+AssertionError: expected 400 to be 405 // Object.is equality
+
+- Expected
++ Received
+
+- 405
++ 400
+
+ ❯ tests/demo-readonly.test.ts:145:24
+    143|     vi.stubEnv('ARIA_DEMO_WRITES', value)
+    144|     const res = await call(guarded[0])
+    145|     expect(res.status).toBe(405)
+       |                        ^
+    146|   })
+    147|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > logs one warning when it is on, however many writes follow
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/demo-readonly.test.ts:154:19
+    152|     await call(guarded[0])
+    153|     const about = warn.mock.calls.filter((args) => String(args[0]).inc…
+    154|     expect(about).toHaveLength(1)
+       |                   ^
+    155|   })
+    156| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  17 failed | 31 passed (48)
+   Start at  15:45:32
+   Duration  1.35s (transform 241ms, setup 67ms, import 211ms, tests 741ms, environment 0ms)
+
