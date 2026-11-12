@@ -5,15 +5,24 @@ A one-person media studio run by AI agents, with a human gate on every dollar.
 **Live demo for reviewers: https://aria-studio-demo.fly.dev** (a replay of recorded runs, no
 key needed, see "Public demo" below).
 
+**Demo video, about 3 minutes: https://youtu.be/ujo0D3vXM9Q**
+
 ## Assessment window: what changed
 
-Everything after the `baseline` tag was done on 2026-11-12 in one session with Claude Code as
-the coding agent, in two parts. The first part (items 1 to 5 below) had a three-hour time box
-and took a little over one hour. The second part (items 6 and 7) was a follow-up request the
-same afternoon and took under an hour. The log has the timestamps. A third, short part
-published the repository and deployed the demo. The project itself is older (see "Status of
-this repository" below). The whole change is `git diff baseline..HEAD`. The working notes are
-in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
+Everything after the `baseline` tag is the work of the assessment window, done in one session
+with Claude Code as the coding agent. Most of it happened on 2026-11-12, in three parts. The
+first part (items 1 to 5 below) had a three-hour time box and took a little over one hour. The
+second part (items 6 and 7) was a follow-up request the same afternoon and took under an hour.
+The log has the timestamps of these two. The third part published the repository, deployed
+the demo, and changed how the studio starts after the owner's first look at it. A short
+wrap-up the next day added the video link and marked the submitted state with the tag
+`submission`.
+
+The project itself is older (see "Status of this repository" below). The whole change is
+`git diff baseline..HEAD`, or the
+[compare view on GitHub](https://github.com/alertcat/aria-studio-assessment/compare/baseline...main).
+The working notes are in [`planning/`](planning/) and the agent session log is in
+[`logs/`](logs/).
 
 ### What changed
 
@@ -21,8 +30,9 @@ in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
    default tenant and renders run on the server's key. On 2026-10-14 an unknown visitor used
    exactly that on a public demo deployment. Now each of the nine write routes starts with
    `readOnlyDemo()` ([`lib/ctx.ts`](lib/ctx.ts)) and answers `405` with an `Allow` header and a
-   reason, before any state is touched. Writes need `ARIA_DEMO_WRITES=1`. Pilot mode keeps its
-   own login and behaves as before.
+   reason, before any state is touched. Writes need `ARIA_DEMO_WRITES`: `1` opens all of them,
+   `replay` opens the three of the public demo (item 6). Pilot mode keeps its own login and
+   behaves as before.
 2. **Order gates refuse illegal actions.** [`lib/gates.ts`](lib/gates.ts) holds one table: which
    of the four human-triggered actions (`greenlight`, `approve`, `revise`, `resume`) is legal
    from which order status. The store enforces it and the routes answer `404` or `409`. Before,
@@ -120,8 +130,8 @@ npm test
 Expected: `Test Files 6 passed (6)` and `Tests 156 passed | 1 expected fail (157)`. The expected
 failure is the known gap described under "Weakest part" below.
 
-Measured twice on a clean export of this branch (Node 20.18, Windows, warm npm cache): install
-48 and 62 seconds, tests 5 seconds both times. `npm run build` takes another 15 to 21 seconds
+Measured on clean copies of the repository (Node 20.18, Windows, warm npm cache): the install
+takes 48 to 62 seconds and the tests 5 seconds. `npm run build` takes another 15 to 21 seconds
 and type-checks the tests.
 
 To see the real server refuse a write, start it in its default mode:
@@ -170,8 +180,8 @@ the header and no order is created.
 - **Vitest 4.1.12, not the latest 5.x**, because 5.x needs Node 22.12 and this project runs on
   Node 20. It is the only new dependency.
 - **Left alone:** lint, a deployment of the live pipeline, the landing page (it stays silent on
-  a refused click), and major-version upgrades. One advisory is left, in `zod` 3.x, and its fix is zod 4.
-  The app lists `zod` but never imports it.
+  a refused click), and major-version upgrades. One advisory is left, in `zod` 3.x, and its
+  fix is zod 4. The app lists `zod` but never imports it.
 
 All decisions with their reasons are in [`planning/03-decisions.md`](planning/03-decisions.md).
 
@@ -197,8 +207,8 @@ Wrong, and how it was corrected (full list in
   route file. The test now enumerates them.
 - The build agent then planned a hand-written table of guarded routes, the same pattern that
   had just failed. The owner caught it at plan review.
-- The one UI change did nothing at first: it wrote the reason into a notice that only exists in
-  pilot mode. All tests were green. It was found by clicking the button in the running app.
+- The first UI change did nothing at first: it wrote the reason into a notice that only exists
+  in pilot mode. All tests were green. It was found by clicking the button in the running app.
 - Two tooling assumptions failed on first run (the config file format, mock state leaking
   between tests), and the GitHub Actions versions it remembered were three majors behind.
 - Its time claims were guesses. It wrote "about 45 minutes" for a phase that the log shows
@@ -223,11 +233,13 @@ Also weak:
 
 - With `ARIA_DEMO_WRITES=1`, demo mode still has no caller identity, so `prune` and `reset`
   are open to anyone who can reach the server.
-- The UI has no tests. The one UI bug of this session was found by hand.
+- The UI has almost no tests. Only the rule for how the studio starts is covered. The one UI
+  bug of this session was found by hand.
 - CI runs on every push and pull request, on Linux with Node 22. No other platform is covered
   there. Locally the suite has only run on Windows.
-- The public demo is one small machine with no monitoring. It was checked once, right after
-  the deploy. The checks and their results are in `planning/02-tasks.md` (T17).
+- The public demo is one small machine with no monitoring. It was checked after each of the two
+  deploys and once more at submission. The checks and their results are in
+  `planning/02-tasks.md` (T17 to T21).
 - The public demo shows recorded runs only. It is evidence for the gates and the flow, not for
   the models.
 - One advisory is left in `zod` 3.x, a dependency the app does not use. Removing it would
