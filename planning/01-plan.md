@@ -209,3 +209,71 @@ the H2 pin test, the live server check.
 - A revision whose render times out cannot be resumed, because the previous clip is still
   attached and `lib/store.ts:668` requires `!o.videoFile`. The old cut stays at the gate.
 - With writes enabled, `prune` and `reset` are still open to any caller in demo mode.
+
+## 8. Second task: a public demo that needs no key (added 2026-11-12, 16:58)
+
+The owner's request, given after the first task was finished and summarised. No stop for
+approval this time. Same rules: tests first, a red commit before each fix, no push.
+
+1. Upgrade dependencies first: `next` to 16.4.6, then `npm audit fix` without `--force`. Record
+   what remains. No major-version upgrade.
+2. A third value for `ARIA_DEMO_WRITES`, `replay`, for a public demo on a host that holds no
+   key. Only three writes are open: an order from a template, greenlight, acceptance. Every
+   other write keeps answering 405 with a reason. Content comes from `public/demo-state.json`
+   and `public/media`. No external client may be called, and the tests prove it by making
+   every client throw. Custom orders are refused with a clear reason. Orders live in memory
+   only, at most 20, the oldest dropped first, nothing on disk. Short simulated delays stay.
+   The transition table still applies. The permission test still enumerates routes and covers
+   the replay tier.
+3. A minimal `fly.toml`: one smallest machine, stop when idle, `ARIA_DEMO_WRITES=replay` as the
+   only variable, no secret, no volume. No deploy command is run.
+4. README and planning files updated. 5. Session logs extended. 6. Final test, build, commit list.
+
+### What the code and the data say
+
+- The snapshot lists three templates, and exactly those three have a recorded run that was
+  delivered without a revision: Kopi Loco (`ord_1`), Visit Palawan (`ord_2`), SlateLab (`ord_3`).
+  The code has a fourth template, Kaya & Co., with no recording. "One of the three templates"
+  in the request matches the data, not `TEMPLATES` in `lib/store.ts`.
+- In each of those three runs the human greenlit the jury's pick, so the recorded cut belongs to
+  the concept that ranks first. An override would have no footage.
+- The recorded media paths are static files (`/media/...` under `public/`). No route is needed.
+- The baseline already paces cached answers (`pace()` in `lib/store.ts`): 2 to 5.5 seconds per
+  concept, 0.8 to 2.4 seconds per duel. "Keep the short delays" can mean exactly these.
+- The baseline pipeline reaches the outside world in five places: `reliable()` for directors
+  and jurors, `generateImage`, `generateVideo`, `settleUsdc`, and the escrow watcher that
+  `publicState()` starts. `reliable()` and `saveSoon()` also write to disk.
+- The UI needs no change: the studio already shows the reason of any 405, and it lists
+  whatever templates the server sends.
+
+### Approach
+
+- `demoWrites()` in `lib/tenant.ts` turns the variable into `off`, `replay` or `on`. Anything
+  else is `off`.
+- `lib/replay.ts` holds the recorded runs (imported from the snapshot), the rule that picks one
+  per template, the 20-order limit and the reason sentences.
+- The store keeps one pipeline. In replay mode only the source of content changes: a recorded
+  draft where it would ask a director, a recorded verdict where it would ask a juror, the
+  recorded files where it would render. Events, statuses, ranking and pacing are the same code
+  as the live path. The store also skips loading and saving, never settles on chain, never
+  starts the watcher, and refuses the actions that would need a client.
+- The routes: `orders`, `greenlight` and `review` are open in replay, each with one body rule
+  (template only, jury pick only, approve only). The other six stay closed.
+- Tests first, in `tests/replay.test.ts` and as a new tier in the enumerating permission test.
+  Delays are tested with fake timers, so there is no speed knob in production code.
+
+### Risks
+
+| Risk | Handling |
+|---|---|
+| A code path reaches a client in replay mode | Every client throws in the replay tests, the call counters must stay at zero, and the store refuses at its own level too |
+| Replayed content drifts from the recording | The tests compare drafts, duels, ranking and media with the snapshot, and check that every recorded file exists |
+| A public page is flooded with orders | 20 orders in memory, a dropped order stops its own timers, events are already capped at 300 |
+| Two machines would mean two memories | README and `fly.toml` say the app must run as a single machine |
+| The Next.js upgrade breaks the UI, which has no tests | Build and suite must pass, and the replay flow is walked through in the running app |
+| `fly.toml` cannot be validated without deploying | Checked against the Fly.io reference, kept minimal, marked as not deployed |
+
+### Not done
+
+No UI change. No rate limit beyond the 20-order window. No override, revision, custom brief or
+upload in replay. No deployment.
