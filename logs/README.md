@@ -2,30 +2,37 @@
 
 ## Which session this is
 
-`session-01` is the build session of the assessment window: one Claude Code session on
-2026-11-12, working on the branch `assessment/gate-harness`. It has two parts, because the
-owner gave a second task after the first one was finished.
+`session-01` is the build session of the assessment window: one Claude Code session that
+started on 2026-11-12. It has four parts, because the owner gave further tasks after the first
+one was finished. Parts 1 and 2 are in the log. Parts 3 and 4 are not.
 
 | Part | Local time | What happened |
 |---|---|---|
-| 1 | from 15:10 | The handoff is checked against the code, the plan is written and approved at 15:34, then tests, fixes, live check, CI, README and the first log export |
-| 2 | from 16:48 | A follow-up task: dependency upgrade, the keyless replay demo, `fly.toml`, README and planning updates, and this second export |
-| 3 | from 17:44 | The release: deployment to Fly.io, push to GitHub, pull request and merge. Then one late change after the owner's first look at the live demo (the studio starts dark and in English, the site is the entry), with its own pull request and redeploy. Not in the log, see below |
+| 1 | 12 Nov, from 15:10 | The handoff is checked against the code, the plan is written and approved at 15:34, then tests, fixes, live check, CI, README and the first log export |
+| 2 | 12 Nov, from 16:48 | A follow-up task: dependency upgrade, the keyless replay demo, `fly.toml`, README and planning updates, and the second export |
+| 3 | 12 Nov, from 17:44 | The release: deployment to Fly.io, push to GitHub, pull request and merge. Then one late change after the owner's first look at the live demo (the studio starts dark and in English, the site is the entry), with its own pull request and redeploy. Not in the log, see below |
+| 4 | 13 Nov, from 04:47 | The wrap-up for submission: the video link, a last pass over the README, the final checks, a third pull request and the `submission` tag. Not in the log, see below |
 
 It is the only session of the window. The recon session that wrote
 `planning/00-recon-handoff.md` is not here: its raw log also covers unrelated private work, as
 the handoff says. Work on the project before the `baseline` tag (July to October 2026) is out
 of scope for the assessment and has no logs in this repository.
 
-## The release is not in the log
+## The release and the wrap-up are not in the log
 
 The deployment to Fly.io, the push to GitHub, the pull request and the merge were done after
 the second export, as a third and short part of the same session. That part was not exported,
 because it works with the owner's credentials: the GitHub credential in the credential manager
 and the Fly.io login. It also holds one late change to the studio's defaults, which was
-published and deployed the same way. What was done there and how it was checked is recorded in
-`planning/02-tasks.md` (T17 to T20), in the two pull requests and on the repository's Actions
-page.
+published and deployed the same way.
+
+The wrap-up for submission the next day is a fourth short part of the same session. It was not
+exported for the same reason: it pushes a branch, opens and merges a pull request and pushes a
+tag with the same GitHub credential. It changed documents only.
+
+What was done in these two parts and how it was checked is recorded in `planning/02-tasks.md`
+(T17 to T21), in the three pull requests, by the `submission` tag and on the repository's
+Actions page.
 
 ## Files
 
@@ -61,7 +68,7 @@ line of totals in the header.
   The call is listed like any other tool call. Its answer is tool output.
 - The very end. The export is itself part of the session, so the log stops where the last
   export ran. Not included: the commit of these files, the final test and build run, the
-  closing summary of part 2, and all of part 3.
+  closing summary of part 2, and all of parts 3 and 4.
 
 ## What was redacted
 

@@ -158,3 +158,15 @@ handoff. "Build agent" is this session.
   changed by them.
 - Correction: `-e` before the pattern, the status line read from the response headers, and
   `fly machine list --json`.
+
+## M-18. Links inside the logged messages do not resolve from the logs folder (build agent)
+
+- What happened: the agent's replies in the session link to files with paths relative to the
+  repository root, for example `planning/01-plan.md`. The export copied them as they were into
+  `logs/`, where GitHub resolves them against `logs/`. 14 links, 7 in each language file, lead
+  nowhere when clicked there.
+- Caught by: the link check of the submission wrap-up. At export time the agent had noticed
+  the mismatch and only wrote a reading note about it in `logs/README.md`.
+- Correction: none in the log files. They are a record of what was said, and the wrap-up was
+  not to change them. The reading note stays, and the task list reports the check as failed
+  for these 14 links.

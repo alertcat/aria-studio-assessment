@@ -522,3 +522,70 @@ is refused there without a visible reason. The studio shows the reason.
 Steps: push the branch, pull request into `main`, wait for CI, merge with a merge commit,
 deploy `main` to the same Fly.io app, run the live checks. The results are in pull request #2
 and on the Actions page.
+
+Result, added with the next task: done. Pull request #2 was green on both runs and was merged
+with a merge commit. The redeploy to the same Fly.io app succeeded on the first attempt. The
+app still has one 256 MB machine and no secret, and the live checks passed again, 15 of 15. In
+a browser with a light system scheme and a Chinese locale the live studio came up dark and in
+English. The CI run on `main` passed.
+
+# Fifth task: submission wrap-up
+
+Added 2026-11-13. Packaging only: no change to application code or tests. The owner made the
+demo video and uploaded it. A local copy lies in `demo/`, which the local exclude file keeps
+out of git, because the file is over GitHub's size limit.
+
+| ID | Task | Status |
+|---|---|---|
+| T21 | Video link, last pass over the README, final checks, submission | done up to this commit, publishing follows |
+
+## T21. Submission wrap-up
+
+Documents:
+
+- README: the demo video is linked at the top, next to the live demo. The "Assessment window"
+  part was read against the repository once more. Corrected: the parts of the session and
+  their dates, how writes are opened (`1` or `replay`), "the UI has no tests", how often the
+  live demo was checked, and the measured times.
+- `logs/README.md`: the wrap-up is a fourth part of the session and is not exported.
+
+Final checks. They ran on commit 97ce839 of `assessment/wrap-up`. The commit after it changes
+this file, one sentence of measured times in the README and one entry in the misses log.
+
+| Check | Result |
+|---|---|
+| `npm ci` on a clean checkout | pass, 363 packages in 47 seconds |
+| `npm test` on a clean checkout | pass, 6 files, 156 passed and 1 expected failure, 4 seconds |
+| `npm run build` on a clean checkout | pass, 14 seconds, no tracked file changed by it |
+| Links, external URLs | pass, all 5 pages answer. A sixth URL is the write endpoint inside an acceptance command. It answers 405, which is its job |
+| Links, relative paths | fail for 14 of 30. All 16 links in the README, the planning files and `logs/README.md` resolve. The other 14 are inside logged messages, 7 in each language file. They were written relative to the repository root, so on GitHub they do not resolve from `logs/`. Left as recorded (miss M-18) |
+| Tracked files, no `.env` | pass, only the template `.env.example`, with no value in it |
+| Tracked files, no PDF | pass |
+| Tracked files, no video added | pass, nothing under `demo/` is tracked. The 12 clips under `public/media` are the product's recorded cuts and come from the baseline |
+| Tracked files, nothing over 5 MB | pass, no tracked file is over 5 MB |
+| Tracked files, no key-shaped string | pass, 10 patterns and no match. Every URL in the lockfile points to the npm registry |
+| Brief, a public repository | pass |
+| Brief, a demo video | pass, linked in the README, and YouTube answers for the link |
+| Brief, exported agent logs | pass, `logs/` holds the Chinese original, the English translation and a README |
+| Brief, the `planning/` folder | pass, handoff, plan, tasks, decisions, agent misses and six evidence files |
+| Brief, a README with what was built, how to run it and the trade-offs | pass |
+| Live demo | pass, the site and the studio answer 200, and `POST /api/reset` answers 405 with a "Replay demo:" reason |
+
+Acceptance:
+
+```bash
+npm test
+```
+
+Expected: `Tests 156 passed | 1 expected fail (157)`.
+
+```bash
+git ls-remote --tags origin
+```
+
+Expected: `baseline` and `submission`.
+
+Submission: the branch is pushed, a third pull request is opened into `main` and merged with a
+merge commit once CI passes, and the merge commit gets the annotated tag `submission`. These
+steps come after this commit. Their results are in the pull request, in the tag and on the
+Actions page.
