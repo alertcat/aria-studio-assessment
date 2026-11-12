@@ -15,7 +15,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | T4 | H2: pin the gap | 5 min | done |
 | T5 | Check the real server | 5 min | done |
 | T6 | CI workflow (optional) | 5 min | done, not yet run on GitHub |
-| T7 | README top section | 15 min | todo |
+| T7 | README top section | 15 min | done |
 | T8 | Session logs | 20 min | todo |
 | T9 | Final verification | 5 min | todo |
 
@@ -174,6 +174,12 @@ The dev server rewrites `next-env.d.ts`. That file was restored afterwards.
 Acceptance: the workflow runs the same two commands as below, and turns green after the owner
 pushes.
 
+Result: written, not yet run on GitHub (nothing is pushed). Rehearsed locally instead: a clean
+`git archive` export of the branch, then `npm ci` (48 s), `npm test` (5 s, 115 passed and 1
+expected fail) and `npm run build` (15 s). That proves the committed tree is complete and the
+lockfile is in step. It does not prove Linux: Docker was not running, so the suite has only
+run on Windows. The action versions were looked up, not remembered (miss M-10).
+
 ```bash
 npm test
 ```
@@ -195,6 +201,9 @@ git diff baseline..HEAD --stat -- README.md
 ```
 
 Expected: README.md changed. The new section is the first one after the title.
+
+Result: done. The older sections that the change made stale were corrected too: the run
+instructions, the layout table and the list of baseline gaps.
 
 ## T8. Session logs
 
