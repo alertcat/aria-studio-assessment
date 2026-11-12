@@ -1,5 +1,6 @@
 import { storeFor, type TenantStore } from './store'
 import { tenantFromRequest, keyFromRequest, tenantIdFor, PILOT } from './tenant'
+import type { Refusal } from './gates'
 
 /** Resolve the tenant store for a request. In pilot mode an unauthenticated request gets null. */
 export function storeForRequest(req: Request): TenantStore | null {
@@ -12,7 +13,13 @@ export function unauthorized(msg = PILOT ? 'login required' : 'no tenant') {
   return Response.json({ error: msg }, { status: 401 })
 }
 
-export const READ_ONLY_REASON = 'Demo mode is read-only: writes need ARIA_DEMO_WRITES=1 on the server.'
+/** The HTTP answer when the transition table refuses an order action: 404 or 409. */
+export function refused(r: Refusal): Response {
+  const { http, ...body } = r
+  return Response.json(body, { status: http })
+}
+
+export const READ_ONLY_REASON ='Demo mode is read-only: writes need ARIA_DEMO_WRITES=1 on the server.'
 
 let warnedDemoWrites = false
 

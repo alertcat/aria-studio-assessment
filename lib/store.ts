@@ -10,6 +10,7 @@ import { startEscrowWatch } from './escrowWatch'
 import { TALENTS, allTalents, addCustomTalent, talentAssetUri, warmTalents } from './talent'
 import { DEFAULT_SPEC, estimateUsd, modelById, normalizeSpec, specLabel, type Spec } from './models'
 import { PILOT, type Tenant, defaultTenant } from './tenant'
+import { refusal, type GateAction } from './gates'
 
 // ============================== types ==============================
 
@@ -534,9 +535,14 @@ async function runJury(o: Order) {
   saveSoon()
 }
 
+/** Why `action` may not run on this order right now, or null. Routes use it to report a refusal. */
+function gate(orderId: string, action: GateAction) {
+  return refusal(S.state.orders.find((x) => x.id === orderId), action)
+}
+
 function greenlightOrder(orderId: string, agentId?: string, talentId?: string, apiKey?: string, spec?: Spec) {
   const o = S.state.orders.find((x) => x.id === orderId)
-  if (!o || o.status !== 'greenlight') return
+  if (!o || refusal(o, 'greenlight')) return
   if (PILOT && !apiKey) {
     ev('ERR', 'Render refused: the request carried no customer key', o.id)
     return
@@ -726,7 +732,10 @@ async function runPipeline(orderId: string) {
 
 async function runRevision(orderId: string, feedback: string, apiKey?: string, lang?: 'zh' | 'en') {
   const o = S.state.orders.find((x) => x.id === orderId)
-  if (!o || !o.winnerAgentId) return
+  // Only a cut that waits at Gate 2 can be sent back. Without this check a delivered
+  // order could be revised, approved again and booked twice, and an order that is
+  // still rendering could start a second render.
+  if (!o || refusal(o, 'revise') || !o.winnerAgentId) return
   if (PILOT && !apiKey) return
   try {
     o.status = 'revising'
@@ -771,7 +780,13 @@ async function runRevision(orderId: string, feedback: string, apiKey?: string, l
 async function resumeRender(orderId: string, apiKey?: string): Promise<{ ok: boolean; status: string; note?: string }> {
   const o = S.state.orders.find((x) => x.id === orderId)
   if (!o) return { ok: false, status: 'not found' }
+  // This function moves the order to review or back to greenlight, so it must not run
+  // on an order that is delivered or being revised.
+  if (refusal(o, 'resume')) return { ok: false, status: 'illegal state' }
   if (!o.videoTaskId || o.videoFile) return { ok: false, status: 'nothing to resume' }
+  // A render that is still running in this process delivers its own result. Fetching
+  // it here as well would book the cost twice and let two writers set the status.
+  if (o.status === 'producing' && !o.videoInterrupted) return { ok: false, status: 'render in flight' }
   if (PILOT && !apiKey) return { ok: false, status: 'key required' }
   const videoName = `${o.id}_r${o.revision}.mp4`
   try {
@@ -810,7 +825,7 @@ async function resumeRender(orderId: string, apiKey?: string): Promise<{ ok: boo
 
 function approveOrder(orderId: string) {
   const o = S.state.orders.find((x) => x.id === orderId)
-  if (!o || o.status !== 'review') return
+  if (!o || refusal(o, 'approve')) return
   const seq = S.state.delivered + 1
   const hash = crypto
     .createHash('sha256')
@@ -954,6 +969,7 @@ function publicState() {
     tenant,
     getStore,
     ev,
+    gate,
     greenlightOrder,
     runPipeline,
     runRevision,

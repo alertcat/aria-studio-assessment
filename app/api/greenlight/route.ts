@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo, refused } from '@/lib/ctx'
 import { providerBalance, PILOT } from '@/lib/tenant'
 import { LIMITS, globalActiveCount } from '@/lib/store'
 import { normalizeSpec, preChargeUsd } from '@/lib/models'
@@ -17,6 +17,8 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}))
   if (!body.orderId) return Response.json({ error: 'orderId required' }, { status: 400 })
   const orderId = String(body.orderId)
+  const illegal = st.gate(orderId, 'greenlight')
+  if (illegal) return refused(illegal)
   const spec = normalizeSpec(body.spec)
   const { key, error } = spendKey(req, st)
   if (error) return error

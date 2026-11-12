@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo, refused } from '@/lib/ctx'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -13,6 +13,8 @@ export async function POST(req: Request) {
   if (!st) return unauthorized()
   const body = await req.json().catch(() => ({}))
   if (!body.orderId) return Response.json({ error: 'orderId required' }, { status: 400 })
+  const illegal = st.gate(String(body.orderId), 'resume')
+  if (illegal) return refused(illegal)
   const { key, error } = spendKey(req, st)
   if (error) return error
   const result = await st.resumeRender(String(body.orderId), key)
