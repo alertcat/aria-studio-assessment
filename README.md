@@ -130,9 +130,9 @@ npm test
 Expected: `Test Files 6 passed (6)` and `Tests 156 passed | 1 expected fail (157)`. The expected
 failure is the known gap described under "Weakest part" below.
 
-Measured on clean copies of the repository (Node 20.18, Windows, warm npm cache): the install
-takes 48 to 62 seconds and the tests 5 seconds. `npm run build` takes another 15 to 21 seconds
-and type-checks the tests.
+Measured three times on clean copies of the repository (Node 20.18, Windows, warm npm cache):
+the install takes 47 to 62 seconds and the tests 4 to 5 seconds. `npm run build` takes another
+14 to 21 seconds and type-checks the tests.
 
 To see the real server refuse a write, start it in its default mode:
 
