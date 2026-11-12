@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,8 @@ const MAX_BYTES = 8 * 1024 * 1024
 // library, so it can be picked as a virtual talent. Uses the key from the
 // request only. Real people are rejected upstream; the UI says so.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const { key, error } = spendKey(req, st)

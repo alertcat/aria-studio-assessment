@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
 import { providerBalance, PILOT } from '@/lib/tenant'
 import { LIMITS, globalActiveCount } from '@/lib/store'
 import { normalizeSpec, preChargeUsd } from '@/lib/models'
@@ -10,6 +10,8 @@ export const dynamic = 'force-dynamic'
 // key, the balance is checked against the estimate for the chosen spec first, and
 // the key is handed to the render job in memory only.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const body = await req.json().catch(() => ({}))

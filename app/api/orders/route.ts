@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized } from '@/lib/ctx'
+import { storeForRequest, unauthorized, readOnlyDemo } from '@/lib/ctx'
 import { TEMPLATES, LIMITS, globalActiveCount } from '@/lib/store'
 import { PILOT } from '@/lib/tenant'
 
@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic'
 // budget: one job at a time, a daily cap, an overall cap, and a studio-wide
 // concurrency ceiling. Renders are on the customer's key and gated elsewhere.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   if (PILOT) {

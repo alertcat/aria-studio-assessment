@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic'
 // upstream and is already paid for. This fetches that result instead of
 // rendering again.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const body = await req.json().catch(() => ({}))

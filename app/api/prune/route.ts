@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized } from '@/lib/ctx'
+import { storeForRequest, unauthorized, readOnlyDemo } from '@/lib/ctx'
 import type { Order } from '@/lib/store'
 
 export const runtime = 'nodejs'
@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic'
 
 // Admin hygiene: drop delivered orders that have no media, then recompute the books.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const S = st.getStore()

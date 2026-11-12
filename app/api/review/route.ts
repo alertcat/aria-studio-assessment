@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
 import { providerBalance, PILOT } from '@/lib/tenant'
 import { LIMITS, globalActiveCount } from '@/lib/store'
 import { DEFAULT_SPEC, preChargeUsd } from '@/lib/models'
@@ -10,6 +10,8 @@ export const dynamic = 'force-dynamic'
 // own spec, so it is a spending action and needs the customer's key plus a
 // balance check in pilot, and it counts as a running job.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo()
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const body = await req.json().catch(() => ({}))
