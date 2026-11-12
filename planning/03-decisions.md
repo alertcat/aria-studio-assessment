@@ -110,7 +110,10 @@ build phase.
 
 "No UI change" has exactly one exception, allowed by the owner at plan approval: a very small
 branch in the studio's `post()` that puts the server's reason sentence into the existing notice
-line. Without it a refused click does nothing visible. Kept out on purpose: hiding or disabling
+line. Without it a refused click does nothing visible. The live check showed that this notice
+line was only rendered in pilot mode, so the change is two small edits in
+`app/studio/page.tsx`: the branch in `post()` and one line that renders the notice in the demo
+header too (miss M-09). Kept out on purpose: hiding or disabling
 the write controls, a notice line for the landing page, and a Chinese translation of the
 sentence (the translation helper falls back to the English text).
 

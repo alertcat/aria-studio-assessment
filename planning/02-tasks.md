@@ -13,7 +13,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | T2 | H0: read-only demo | 25 min | done |
 | T3 | H1: gate guards | 35 min | done |
 | T4 | H2: pin the gap | 5 min | done |
-| T5 | Check the real server | 5 min | todo |
+| T5 | Check the real server | 5 min | done |
 | T6 | CI workflow (optional) | 5 min | todo |
 | T7 | README top section | 15 min | todo |
 | T8 | Session logs | 20 min | todo |
@@ -156,6 +156,16 @@ Expected: `405` and a JSON body that says the demo is read-only.
 
 Then open http://localhost:3000/studio and click any template brief. Expected: the notice line
 shows the same reason sentence.
+
+Result: done, against `next dev` in default demo mode on a spare port. `POST /api/reset`,
+`/api/prune` and `/api/orders` answered 405 with an empty `Allow` header and the reason.
+`POST /api/talent` answered 405 with `Allow: GET`. `GET /api/talent` answered 200 and
+`POST /api/login` answered 200 (exempt). No `data/` directory was created.
+
+The UI part failed on the first try: the click was refused, but nothing was shown, because the
+notice line only existed in the pilot header (miss M-09). After a one-line fix the studio shows
+"Demo mode is read-only: writes need ARIA_DEMO_WRITES=1 on the server." and creates no order.
+The dev server rewrites `next-env.d.ts`. That file was restored afterwards.
 
 ## T6. CI workflow (optional, first to be cut)
 

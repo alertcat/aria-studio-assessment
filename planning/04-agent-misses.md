@@ -71,3 +71,17 @@ handoff. "Build agent" is this session.
 - Caught by: the owner, at plan approval.
 - Correction: the test enumerates write handlers from the filesystem and tests all of them.
   Only exemptions are listed, with reasons (decision D-09).
+
+## M-09. Put the reason into a notice line that demo mode never renders (build agent)
+
+- What happened: the one allowed UI change set the studio's `notice` state on a 405. The
+  `notice` element is only rendered in the pilot branch of the header, and a 405 only happens in
+  demo mode. So the reason was stored and never shown.
+- Why: I read `post()` and the line that renders the notice, and did not read the conditional
+  around that line.
+- Caught by: the live check (T5). The unit tests could not catch it: there is no UI test, and
+  the route answered 405 correctly. In the running app the click was refused and the header
+  stayed empty.
+- Correction: one more line renders the same notice in the demo branch of the header. Checked
+  again in the running app: the sentence appears after a refused click.
+- Lesson: a change is not verified until it has been seen working where the user sees it.
