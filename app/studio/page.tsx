@@ -516,6 +516,7 @@ export default function StudioPage() {
               <span>
                 {T('shipped')} <span className="text-zinc-100">{state.delivered}</span>
               </span>
+              {notice && <span className="text-red-400">{notice}</span>}
             </>
           )}
           <button
