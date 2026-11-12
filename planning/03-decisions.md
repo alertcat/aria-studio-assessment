@@ -225,3 +225,15 @@ up the demo, so there is nothing an operator could misconfigure.
   have been copied into the image.
 - The syntax was checked against the Fly.io configuration reference and the file parses as
   TOML. It has not been deployed, so it is unproven.
+
+Update, 17:55 the same day: the file was deployed unchanged and the demo passed its checks
+(`02-tasks.md`, T17). 256 MB was enough.
+
+## D-28. The logs say the release ran in the same session, because it did (agent)
+
+The owner's release instructions asked for a note that the push, the pull request and the
+deployment were done in another, very short session, and were not exported because
+credentials were involved. The release was in fact done in the same session, as a third part
+after the second export. The note in `logs/README.md` says that, and keeps the owner's reason
+for not exporting it. Rejected: the requested wording, which would have been false in the one
+file whose job is to say what the logs cover.

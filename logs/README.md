@@ -10,11 +10,20 @@ owner gave a second task after the first one was finished.
 |---|---|---|
 | 1 | from 15:10 | The handoff is checked against the code, the plan is written and approved at 15:34, then tests, fixes, live check, CI, README and the first log export |
 | 2 | from 16:48 | A follow-up task: dependency upgrade, the keyless replay demo, `fly.toml`, README and planning updates, and this second export |
+| 3 | from 17:44 | The release: deployment to Fly.io, push to GitHub, pull request and merge. Not in the log, see below |
 
 It is the only session of the window. The recon session that wrote
 `planning/00-recon-handoff.md` is not here: its raw log also covers unrelated private work, as
 the handoff says. Work on the project before the `baseline` tag (July to October 2026) is out
 of scope for the assessment and has no logs in this repository.
+
+## The release is not in the log
+
+The deployment to Fly.io, the push to GitHub, the pull request and the merge were done after
+the second export, as a third and short part of the same session. That part was not exported,
+because it works with the owner's credentials: the GitHub credential in the credential manager
+and the Fly.io login. What was done there and how it was checked is recorded in
+`planning/02-tasks.md` (T17 and T18), in the pull request and on the repository's Actions page.
 
 ## Files
 
@@ -49,8 +58,8 @@ line of totals in the header.
 - The report of the one sub-agent that was used (to read the Fly.io configuration reference).
   The call is listed like any other tool call. Its answer is tool output.
 - The very end. The export is itself part of the session, so the log stops where the last
-  export ran. Not included: the commit of these files, the final test and build run, and the
-  closing summary of part 2.
+  export ran. Not included: the commit of these files, the final test and build run, the
+  closing summary of part 2, and all of part 3.
 
 ## What was redacted
 

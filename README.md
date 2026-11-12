@@ -2,14 +2,18 @@
 
 A one-person media studio run by AI agents, with a human gate on every dollar.
 
+**Live demo for reviewers: https://aria-studio-demo.fly.dev/studio** (a replay of recorded
+runs, no key needed, see "Public demo" below).
+
 ## Assessment window: what changed
 
 Everything after the `baseline` tag was done on 2026-11-12 in one session with Claude Code as
 the coding agent, in two parts. The first part (items 1 to 5 below) had a three-hour time box
 and took a little over one hour. The second part (items 6 and 7) was a follow-up request the
-same afternoon and took under an hour. The log has the timestamps. The project itself is older
-(see "Status of this repository" below). The whole change is `git diff baseline..HEAD`. The
-working notes are in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
+same afternoon and took under an hour. The log has the timestamps. A third, short part
+published the repository and deployed the demo. The project itself is older (see "Status of
+this repository" below). The whole change is `git diff baseline..HEAD`. The working notes are
+in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
 
 ### What changed
 
@@ -30,7 +34,8 @@ working notes are in [`planning/`](planning/) and the agent session log is in [`
    keeps no list of routes. It walks `app/`, imports every route file and tests every write
    method it exports, so a route added later is covered the day it is added.
 4. **The studio shows why a write was refused.** This is the only UI change.
-5. **A CI workflow** that runs install, test and build. It has not run on GitHub yet.
+5. **A CI workflow** that runs install, test and build. It runs on every push and pull
+   request.
 6. **A public demo that needs no key.** `ARIA_DEMO_WRITES=replay` opens three writes: a
    template brief, greenlight and acceptance. It replays runs that were recorded earlier and
    are part of the repository. No external client is called, and the tests prove it by making
@@ -42,8 +47,14 @@ working notes are in [`planning/`](planning/) and the agent session log is in [`
 ### Public demo: what it can and cannot do
 
 `ARIA_DEMO_WRITES=replay` sits between read-only and full writes. It is meant for a public page
-on a host that holds no key. [`fly.toml`](fly.toml) describes such a host. It has not been
-deployed from this repository.
+on a host that holds no key. That page is live:
+
+- Reviewers, start here: https://aria-studio-demo.fly.dev/studio
+- Landing page: https://aria-studio-demo.fly.dev
+
+[`fly.toml`](fly.toml) is the configuration of that host: one 256 MB machine in Singapore
+with no secret and no volume. It stops when idle, so the first request after a pause takes a
+few seconds.
 
 What a visitor can do, on `/studio`:
 
@@ -72,7 +83,8 @@ mode they have no effect: the recorded cut is shown as it was rendered.
 
 What the host keeps: nothing on disk. Orders live in memory, the newest 20 at most. A machine
 that stops when idle starts empty again. Orders live in one process, so the app has to run as
-exactly one machine. On Fly.io that is `fly scale count 1` after the first deploy.
+exactly one machine. The deployment was made with `fly deploy --ha=false` and is kept at
+`fly scale count 1`.
 
 What it does not prove: that the live pipeline works today. For that, run it with your own
 keys (see "Run the live pipeline" below).
@@ -155,8 +167,8 @@ the header and no order is created.
   before it, with the captured output in [`planning/evidence/`](planning/evidence/).
 - **Vitest 4.1.12, not the latest 5.x**, because 5.x needs Node 22.12 and this project runs on
   Node 20. It is the only new dependency.
-- **Left alone:** lint, any real deployment, the landing page (it stays silent on a refused
-  click), and major-version upgrades. One advisory is left, in `zod` 3.x, and its fix is zod 4.
+- **Left alone:** lint, a deployment of the live pipeline, the landing page (it stays silent on
+  a refused click), and major-version upgrades. One advisory is left, in `zod` 3.x, and its fix is zod 4.
   The app lists `zod` but never imports it.
 
 All decisions with their reasons are in [`planning/03-decisions.md`](planning/03-decisions.md).
@@ -210,9 +222,10 @@ Also weak:
 - With `ARIA_DEMO_WRITES=1`, demo mode still has no caller identity, so `prune` and `reset`
   are open to anyone who can reach the server.
 - The UI has no tests. The one UI bug of this session was found by hand.
-- The CI workflow has not run yet, and the suite has only run on Windows.
-- `fly.toml` has never been deployed. It was checked against the Fly.io reference and it
-  parses. Nothing more is known about it.
+- CI runs on every push and pull request, on Linux with Node 22. No other platform is covered
+  there. Locally the suite has only run on Windows.
+- The public demo is one small machine with no monitoring. It was checked once, right after
+  the deploy. The checks and their results are in `planning/02-tasks.md` (T17).
 - The public demo shows recorded runs only. It is evidence for the gates and the flow, not for
   the models.
 - One advisory is left in `zod` 3.x, a dependency the app does not use. Removing it would
@@ -287,7 +300,7 @@ Then run `npm run dev` and open `/studio`. In demo mode every write is refused w
 | `app/studio`, `app/page.tsx` | Control room and landing page |
 | `tests/` | Vitest suite and its hermetic harness |
 | `planning/`, `logs/` | Assessment notes and the agent session log |
-| `fly.toml` | A host for the public demo. Not deployed |
+| `fly.toml` | The host of the public demo |
 
 ## Known gaps in the baseline
 

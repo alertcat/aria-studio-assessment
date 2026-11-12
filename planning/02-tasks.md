@@ -405,3 +405,68 @@ repository has no remote and no Fly command was run.
 
 This entry was committed afterwards as a documentation-only change, and the suite and the
 build were run once more on that final commit.
+
+# Third task: release
+
+Added 2026-11-12 at 17:44. The owner asked for the release only, with no development. The
+owner authorised a new public GitHub repository, a pull request and its merge, and a new
+Fly.io app. Stop conditions: the repository name is taken, the credentials lack a permission,
+or the Fly deploy fails twice in a row. None of them occurred.
+
+| ID | Task | Status |
+|---|---|---|
+| T17 | Preflight, deploy to Fly.io, verify the live demo | done |
+| T18 | Publish on GitHub: repository, push, pull request, CI, merge | follows this commit |
+
+## T17. Preflight, deploy to Fly.io, verify the live demo
+
+Preflight, all passed:
+
+- Branch `assessment/gate-harness`, clean tree, no remote.
+- `npm test`: 149 passed and 1 expected failure. `npm run build`: passes.
+- Tracked files: no PDF. The only env file is `.env.example`, and no line in it has a value.
+- A scan of every tracked file at `HEAD` and at `baseline` (the lockfile aside) for key
+  shapes, private key blocks, 64-character hex strings and e-mail addresses: no match. Every
+  URL in the lockfile points to the npm registry. Every author, committer and tagger address
+  in the history is a GitHub no-reply address.
+- The two prerendered pages contain no e-mail address and no external link.
+
+Deploy:
+
+- `fly apps create aria-studio-demo`. The first of the three allowed names was free.
+- `fly deploy --app aria-studio-demo --ha=false --remote-only --yes` with the repository's
+  `fly.toml`. It succeeded on the first attempt, in 2 minutes 16 seconds.
+- `fly scale count 1`: already one machine.
+- Result: one `shared-cpu-1x` machine with 256 MB in `sin`, stop when idle, no volume.
+  `fly secrets list` is empty. The only variable this repository sets is
+  `ARIA_DEMO_WRITES=replay`.
+
+Acceptance, against the live site:
+
+```bash
+node -e "fetch('https://aria-studio-demo.fly.dev/api/reset',{method:'POST'}).then(async r=>console.log(r.status, await r.text()))"
+```
+
+Expected: `405` and a reason that starts with "Replay demo:".
+
+Result: 15 of 15 checks passed right after the deploy.
+
+- `/` and `/studio` answer 200. Their HTML holds no e-mail address and no external link.
+- `POST /api/reset` answers 405: "Replay demo: only template briefs, greenlight and
+  acceptance are open."
+- A custom order answers 405: "Replay demo: custom briefs are off, so fire one of the
+  template briefs instead."
+- One template went through both gates: Gate 1 after 9.5 seconds with 3 concepts and 6
+  verdicts, Gate 2 after 4.9 seconds with the recorded clip, which is served as `video/mp4`,
+  then acceptance, status `delivered`, invoice `INV-2026-0001`.
+- The machine was not killed for memory. Its event list shows a launch and a start, and the
+  logs have no out-of-memory line. The memory size stays at 256 MB.
+
+## T18. Publish on GitHub
+
+Steps: create the public repository `aria-studio-assessment` through the API, push `main` and
+the `baseline` tag, push `assessment/gate-harness`, open a pull request into `main`, wait for
+CI, merge with a merge commit, keep the branch.
+
+These steps come after this commit, so their results cannot be in this file. They are in the
+pull request and on the repository's Actions page.

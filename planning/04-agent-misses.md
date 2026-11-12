@@ -148,3 +148,13 @@ handoff. "Build agent" is this session.
   install, so 67 in total.
 - Caught by: running the clean-export rehearsal a second time.
 - Correction: the heading says "about a minute" and the text gives both measurements.
+
+## M-17. Three command slips during the release (build agent)
+
+- What happened: a scan pattern that starts with a dash was read by `git grep` as an option.
+  A `curl` write-out format failed with error 43 on this Windows build, twice. And
+  `fly machine status --json` is not a valid form in this CLI version.
+- Caught by: the error output each time. All three were read-only checks, so nothing was
+  changed by them.
+- Correction: `-e` before the pattern, the status line read from the response headers, and
+  `fly machine list --json`.
