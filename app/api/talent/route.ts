@@ -1,4 +1,4 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo } from '@/lib/ctx'
 import { TALENTS } from '@/lib/talent'
 
 export const runtime = 'nodejs'
@@ -11,6 +11,8 @@ export async function GET() {
 // Pre-register every portrait in this tenant's private asset library. Uses the
 // customer's key from the request, never a stored one.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo('GET')
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const { key, error } = spendKey(req, st)

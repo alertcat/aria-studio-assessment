@@ -1,0 +1,22 @@
+# Public replay demo on Fly.io. Written for the assessment, not deployed from here.
+#
+# The app replays recorded runs and needs no key: one plain variable, no secret.
+# Orders live in memory, so there is no volume, and the app has to run as exactly
+# one machine. After the first deploy: fly scale count 1
+
+app = "aria-studio-demo" # placeholder, overridden at deploy time
+primary_region = "sin"
+
+[env]
+  ARIA_DEMO_WRITES = "replay"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

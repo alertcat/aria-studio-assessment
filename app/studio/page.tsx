@@ -336,6 +336,10 @@ export default function StudioPage() {
       setNotice(tr(lang, String(j.reason || 'The studio is busy right now, try again in a minute.')))
     } else if (r.status === 403) {
       setNotice(tr(lang, 'This key does not match the current session. Log out and sign in again.'))
+    } else if (r.status === 405) {
+      // read-only demo: show the server's own reason
+      const j = await r.json().catch(() => ({}))
+      setNotice(tr(lang, String(j.reason || 'This demo is read-only.')))
     } else {
       setNotice('')
     }
@@ -512,6 +516,7 @@ export default function StudioPage() {
               <span>
                 {T('shipped')} <span className="text-zinc-100">{state.delivered}</span>
               </span>
+              {notice && <span className="text-red-400">{notice}</span>}
             </>
           )}
           <button

@@ -1,4 +1,5 @@
-import { storeForRequest, unauthorized, spendKey } from '@/lib/ctx'
+import { storeForRequest, unauthorized, spendKey, readOnlyDemo, refused, inReplay, replayRefusal } from '@/lib/ctx'
+import { REPLAY_REASONS } from '@/lib/replay'
 import { providerBalance, PILOT } from '@/lib/tenant'
 import { LIMITS, globalActiveCount } from '@/lib/store'
 import { DEFAULT_SPEC, preChargeUsd } from '@/lib/models'
@@ -10,14 +11,22 @@ export const dynamic = 'force-dynamic'
 // own spec, so it is a spending action and needs the customer's key plus a
 // balance check in pilot, and it counts as a running job.
 export async function POST(req: Request) {
+  const readOnly = readOnlyDemo('', true)
+  if (readOnly) return readOnly
   const st = storeForRequest(req)
   if (!st) return unauthorized()
   const body = await req.json().catch(() => ({}))
   const { orderId, action, feedback } = body
   if (!orderId || !action) return Response.json({ error: 'orderId and action required' }, { status: 400 })
   if (action === 'approve') {
+    const illegal = st.gate(String(orderId), 'approve')
+    if (illegal) return refused(illegal)
     st.approveOrder(String(orderId))
   } else if (action === 'revise') {
+    // a revision needs a director and a new render: the replay demo has neither
+    if (inReplay()) return replayRefusal(REPLAY_REASONS.revise, 'POST')
+    const illegal = st.gate(String(orderId), 'revise')
+    if (illegal) return refused(illegal)
     const { key, error } = spendKey(req, st)
     if (error) return error
     if (PILOT) {

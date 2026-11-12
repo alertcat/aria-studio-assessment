@@ -9,3 +9,6 @@ out/
 api_off/
 .vercel
 *.tsbuildinfo
+
+# the assessment brief is the company's document and stays out of git
+planning/assessment-brief.pdf

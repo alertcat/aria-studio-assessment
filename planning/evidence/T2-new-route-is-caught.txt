@@ -1,0 +1,14 @@
+# T2 check: is a route that nobody listed really tested?
+# A temporary app/api/zz-probe/route.ts with an unguarded DELETE handler was added, the unchanged
+# test file was run, and the probe route was deleted again. It was never committed.
+# Command: npx vitest run tests/demo-readonly.test.ts --reporter=verbose
+# Captured 2026-11-12. Lines about the probe route and the totals:
+
+ × tests/demo-readonly.test.ts > 'DELETE /api/zz-probe' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 9ms
+   → expected 200 to be 405 // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'DELETE /api/zz-probe' > demo mode, ARIA_DEMO_WRITES=1: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'DELETE /api/zz-probe' > pilot mode, no session: 401 as before 6ms
+ ✓ tests/demo-readonly.test.ts > 'DELETE /api/zz-probe' > pilot mode, logged in: not refused 10ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 51 passed (52)
