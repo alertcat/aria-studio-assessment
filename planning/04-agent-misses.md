@@ -112,3 +112,23 @@ handoff. "Build agent" is this session.
   log showed `htt<path>`.
 - Caught by: reading the generated log before committing it.
 - Correction: a drive letter only counts when no letter comes directly before it.
+
+## M-13. The UI check script trusted two loose text matches (build agent)
+
+- What happened: while walking the replay demo in the browser, the script waited for a button
+  containing "Greenlight" and found the status chip of an order in the queue instead, so it
+  ran ahead and failed. It then took the first invoice number on the page as proof that
+  "Accept and settle" had worked, although that number belonged to an older order.
+- Caught by: the script crashing on the next step, and by reading the server state afterwards
+  instead of trusting the page text.
+- Correction: exact button labels, the order selected explicitly, and the result confirmed
+  from `/api/state`: the second order was delivered with its own invoice.
+
+## M-14. Kept packing document edits into long shell commands (build agent)
+
+- What happened: twice a shell command that edited several planning files at once broke on
+  quoting. The first one (M-11 time) wrote one file and then stopped. The second one failed to
+  parse, so nothing ran.
+- Caught by: the error, and by checking afterwards which files had really changed instead of
+  assuming all or nothing.
+- Correction: documents are edited with the file tools. Shell commands are for running things.

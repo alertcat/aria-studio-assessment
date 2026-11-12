@@ -1,0 +1,11 @@
+# T11 check: do the replay tests notice when replay mode is broken?
+# Five one-line mutations, one at a time. After each one tests/replay.test.ts was run and the
+# file was restored with git checkout. Captured 2026-11-12.
+
+A. replay asks a director and a juror through reliable()      Tests  9 failed | 7 passed (16)
+B. the limit is 21 orders instead of 20                       Tests  2 failed | 14 passed (16)
+C. replay may settle on chain                                 Tests  3 failed | 13 passed (16)
+D. replay saves the state to disk                             Tests  5 failed | 11 passed (16)
+E. the newest recording is replayed instead of the oldest     Tests  1 failed | 15 passed (16)
+
+restored                                                      Tests  16 passed (16)

@@ -155,3 +155,73 @@ the unused dependency would clear it. That was not asked for and is left as a ne
 
 Also changed by the upgrade: Next.js 16.4.6 regenerates the tracked file `next-env.d.ts` with
 one more import line. The new version is committed so that a build leaves the tree clean.
+
+## D-21. Replay shows one recorded run per template, and only templates that have one (agent)
+
+The snapshot has six recorded orders. A run qualifies for replay when it was delivered without
+a revision and the human greenlit the jury's pick. The oldest qualifying run per title is used:
+`ord_1` for Kopi Loco, `ord_2` for Visit Palawan, `ord_3` for SlateLab. Kaya & Co., the fourth
+template in the code, has no recording, so in replay mode the store does not offer it. The
+studio lists whatever the server sends, so this needed no UI change. The owner's "three
+templates" matches the data. Rejected: rotating through several recordings per template (more
+variety, more rules), and offering Kaya with a refusal (a button that never works).
+
+## D-22. Every replay refusal is a 405 with one reason sentence (agent)
+
+The owner asked for 405 with a reason on the closed routes and named revision among them.
+Revision shares a route with acceptance, so that rule already makes a 405 depend on the body.
+The other two body-level refusals, a custom brief and an override of the jury pick, follow the
+same pattern. One status means the studio shows every reason through the one branch it already
+has. The `Allow` header names what really works on the route in this mode: the read methods
+for a closed route, and `POST` for the three open routes when one request is refused. Cost: a
+405 that lists the method it just refused is unusual. A 403 would be more exact for those
+three cases, but the studio shows a wrong message for every 403 (see D-07).
+
+## D-23. No override of the jury pick in replay (agent)
+
+Only the concept that was greenlit in the recorded run has footage. Accepting another pick
+would put one concept next to another concept's video. The route refuses with a reason and
+the store ignores the pick. Render options from the studio (model, resolution, talent) are
+ignored for the same reason: the recorded cut is what it is. Cost: the override, one of the
+two things Gate 1 exists for, cannot be tried in the public demo.
+
+## D-24. Replay is the live pipeline with a different source, not a second pipeline (agent)
+
+`conceptOne` and `runJury` take a recorded answer where they would call a model. Everything
+after that is shared: parsing, events, Bradley-Terry ranking, cost booking, statuses and the
+pacing delays that the baseline already had for cached answers (2 to 5.5 seconds per concept,
+0.8 to 2.4 per duel). Only the render has its own short function, five steps of 0.9 seconds.
+The store also refuses revise, resume and talent registration in replay mode, so a route that
+forgets the mode check still cannot reach a client. Rejected: a separate replay store, which
+would duplicate state handling, and replaying the recorded event log, which contains real
+settlement lines that would be false for a new order.
+
+## D-25. The books stay monotonic when old orders are dropped (agent)
+
+Replay mode keeps the newest 20 orders. Revenue, the delivered count and the invoice sequence
+are not recomputed when an order is dropped. Otherwise a later order would get an invoice
+number that is still on screen. Cost: after more than 20 orders the totals count orders that
+are no longer listed. A dropped order stops at its next step and writes nothing more to the
+event log, so a flood of requests cannot grow memory or keep timers alive for long.
+
+## D-26. Delays are tested with simulated time, not with a speed setting (agent)
+
+The replay tests use Vitest's fake timers and measure simulated time: the gate is reached
+after 2 to 15 seconds, the review after 1 to 10. Production code got no variable for speeding
+up the demo, so there is nothing an operator could misconfigure.
+
+## D-27. fly.toml: one machine, 256 MB, Singapore, and notes kept out of the image (agent)
+
+- `shared-cpu-1x` with 256 MB is the smallest machine. The production server used about 90 MB
+  on this machine after two full runs. If Fly kills it for memory, 512 MB is the next step.
+- `auto_stop_machines = "stop"` with `min_machines_running = 0` stops it when idle. A stopped
+  machine loses its orders, which is what "memory only" means.
+- The file cannot say "exactly one machine". Orders live in one process, so two machines
+  would show two different studios. The README tells the owner to run `fly scale count 1`.
+- `primary_region = "sin"` is a guess from the project's Singapore context. The owner can
+  change it at deploy time, like the app name.
+- `.dockerignore` now excludes `planning` and `logs`. `fly deploy` builds from the working
+  directory, and the untracked brief PDF lives in `planning/`. Without the entry it would
+  have been copied into the image.
+- The syntax was checked against the Fly.io configuration reference and the file parses as
+  TOML. It has not been deployed, so it is unproven.

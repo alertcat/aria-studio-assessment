@@ -276,9 +276,9 @@ Added 2026-11-12 at 16:58. Same conventions as above.
 | ID | Task | Status |
 |---|---|---|
 | T10 | Upgrade dependencies | done |
-| T11 | Replay mode, red then green | todo |
-| T12 | Walk the replay in the running app | todo |
-| T13 | Minimal `fly.toml` | todo |
+| T11 | Replay mode, red then green | done |
+| T12 | Walk the replay in the running app | done |
+| T13 | Minimal `fly.toml` | done, not deployed |
 | T14 | README and planning files | todo |
 | T15 | Extend the session logs | todo |
 | T16 | Final verification | todo |
@@ -329,6 +329,11 @@ npx vitest run tests/demo-readonly.test.ts
 Expected: every discovered write handler has a replay case. Three are open, the rest answer
 405 with the replay reason.
 
+Result: done. Red run: 24 failed, 58 passed in the two files (`planning/evidence/T11-red.txt`).
+The first failure was that reading the state starts the escrow watcher. After the change: 82
+passed, full suite 149 passed and 1 expected failure, build passes. Five one-line mutations of
+replay mode were each caught by the tests (`planning/evidence/T11-mutation-checks.txt`).
+
 ## T12. Walk the replay in the running app
 
 Acceptance, in PowerShell:
@@ -342,6 +347,16 @@ recorded concepts and jury, the first greenlight button plays the recorded rende
 "Accept and settle" delivers the order. "Send back", a custom brief and the playbook each show
 a sentence that starts with "Replay demo:".
 
+Result: done against the production build (`next start`) with `ARIA_DEMO_WRITES=replay` and no
+other variable. Through the API: three templates offered, the gate after 7.6 seconds, the
+review after 4.8, the recorded video and poster served as static files, acceptance with a
+simulated settlement, and a 405 with the right sentence for an override, a revision, a custom
+brief and all six closed routes. Through the studio page: three template buttons, the recorded
+cut plays, "Override and fund" and "Send back" show their reasons in the header, "Accept and
+settle" delivers. No `data/` directory was created. The server process used about 90 MB.
+
+The first version of the browser script was wrong twice (miss M-13).
+
 ## T13. Minimal fly.toml
 
 Acceptance:
@@ -352,6 +367,10 @@ git grep -n -E "ARIA_DEMO_WRITES|auto_stop_machines|min_machines_running|memory"
 
 Expected: the replay variable, stop when idle, zero machines kept running, the smallest
 memory size. No secret and no volume in the file. Nothing deployed.
+
+Result: written, parsed as TOML, checked against the Fly.io configuration reference. Not
+deployed and no Fly command was run, so it is unproven (decision D-27). `.dockerignore` now
+keeps `planning` and `logs` out of the image.
 
 ## T14. README and planning files
 
