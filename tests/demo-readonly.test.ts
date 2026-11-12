@@ -1,15 +1,28 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { NO_OUTSIDE_CALLS, REPO_ROOT, filesWritten, outsideCalls, pilotSession, request, sandbox, storesCreated } from './harness'
+import {
+  NO_OUTSIDE_CALLS,
+  REPO_ROOT,
+  filesWritten,
+  forbidOutsideClients,
+  outsideCalls,
+  pilotSession,
+  request,
+  sandbox,
+  storesCreated,
+} from './harness'
 
 // H0. Demo mode has no login, so it must refuse writes unless the operator opts in
 // with ARIA_DEMO_WRITES=1. Pilot mode keeps its own login and must not change.
 //
 // Nobody maintains a list of routes here. The cases come from the app directory:
 // every route file is imported, and every write method it exports becomes a case.
-// A route added tomorrow is tested tomorrow. The only hand-written list is the
-// exemptions below, and each exemption is held to its reason.
+// A route added tomorrow is tested tomorrow. The only hand-written lists are the
+// exemptions and the routes that the replay demo opens, each entry with its reason.
+//
+// ARIA_DEMO_WRITES has three tiers: unset (read-only), "replay" (a keyless public
+// demo that opens three writes) and "1" (everything, for a machine you control).
 
 const WRITE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'] as const
 const READ_METHODS = ['GET', 'HEAD', 'OPTIONS'] as const
@@ -19,6 +32,18 @@ const EXEMPT: Record<string, string> = {
   'POST /api/login': 'demo mode has no login, it answers { ok: true, demo: true } and touches nothing',
   'POST /api/logout': 'it only clears the session cookie in its own response',
 }
+
+/**
+ * Write handlers that the replay demo opens, and what each one is for. Every other
+ * write handler must stay closed in replay mode. tests/replay.test.ts covers what
+ * these three accept and refuse.
+ */
+const REPLAY_OPEN: Record<string, string> = {
+  'POST /api/orders': 'fires one of the template briefs that have a recorded run',
+  'POST /api/greenlight': 'Gate 1: plays the recorded render of the jury pick',
+  'POST /api/review': 'Gate 2: acceptance only',
+}
+const REPLAY_CLOSED_REASON = 'Replay demo: only template briefs, greenlight and acceptance are open.'
 
 type RouteContext = { params: Promise<Record<string, string>> }
 type RouteModule = Partial<Record<string, (req: Request, ctx: RouteContext) => Promise<Response> | Response>>
@@ -90,6 +115,11 @@ describe('route discovery', () => {
     const ids = handlers.map((h) => h.id)
     for (const id of Object.keys(EXEMPT)) expect(ids, `${id} is exempt, but no such handler exists`).toContain(id)
   })
+
+  it('has no stale replay entry', () => {
+    const ids = guarded.map((h) => h.id)
+    for (const id of Object.keys(REPLAY_OPEN)) expect(ids, `${id} is open in replay, but no such handler exists`).toContain(id)
+  })
 })
 
 describe.each(guarded)('$id', (h) => {
@@ -111,6 +141,26 @@ describe.each(guarded)('$id', (h) => {
     sandbox({ demoWrites: true })
     const res = await call(h)
     expect(res.status).not.toBe(405)
+  })
+
+  it('demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called', async () => {
+    sandbox({ demoWrites: 'replay' })
+    await forbidOutsideClients()
+    const res = await call(h)
+    const body = await res.json().catch(() => ({}))
+    if (h.id in REPLAY_OPEN) {
+      // the route is reachable: whatever it says to an empty request, it is not the route-level refusal
+      expect(body.reason).not.toBe(REPLAY_CLOSED_REASON)
+      expect(body.error).not.toBe('read-only demo')
+    } else {
+      expect(res.status).toBe(405)
+      const mod = await load(h.spec)
+      expect(res.headers.get('allow')).toBe(READ_METHODS.filter((m) => typeof mod[m] === 'function').join(', '))
+      expect(body).toEqual({ error: 'replay demo', reason: REPLAY_CLOSED_REASON })
+      expect(storesCreated()).toBe(0)
+    }
+    expect(filesWritten()).toEqual([])
+    expect(await outsideCalls()).toEqual(NO_OUTSIDE_CALLS)
   })
 
   it('pilot mode, no session: 401 as before', async () => {
@@ -136,6 +186,16 @@ describe.each(exempt)('$id (exempt: $reason)', (h) => {
     expect(filesWritten()).toEqual([])
     expect(await outsideCalls()).toEqual(NO_OUTSIDE_CALLS)
   })
+
+  it('demo mode, ARIA_DEMO_WRITES=replay: stays open and has no side effect', async () => {
+    sandbox({ demoWrites: 'replay' })
+    await forbidOutsideClients()
+    const res = await call(h)
+    expect(res.status).toBe(200)
+    expect(storesCreated()).toBe(0)
+    expect(filesWritten()).toEqual([])
+    expect(await outsideCalls()).toEqual(NO_OUTSIDE_CALLS)
+  })
 })
 
 describe('the ARIA_DEMO_WRITES switch', () => {
@@ -144,6 +204,18 @@ describe('the ARIA_DEMO_WRITES switch', () => {
     const res = await call(guarded[0])
     expect(res.status).toBe(405)
   })
+
+  it.each(['REPLAY', 'Replay', ' replay', 'replay ', 'replay1', 'record'])(
+    'the value %j is not the replay tier: every write stays closed, read-only',
+    async (value) => {
+      vi.stubEnv('ARIA_DEMO_WRITES', value)
+      for (const h of guarded) {
+        const res = await call(h)
+        expect(res.status, h.id).toBe(405)
+        expect((await res.json()).error, h.id).toBe('read-only demo')
+      }
+    },
+  )
 
   it('logs one warning when it is on, however many writes follow', async () => {
     sandbox({ demoWrites: true })

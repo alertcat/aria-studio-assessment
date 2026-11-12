@@ -14,7 +14,8 @@ export const APP_ENV: string[] = fs
   .map((line) => /^([A-Z][A-Z0-9_]*)=/.exec(line)?.[1])
   .filter((name): name is string => !!name)
 
-export type Mode = { pilot?: boolean; demoWrites?: boolean }
+/** `demoWrites: true` sets ARIA_DEMO_WRITES=1, `'replay'` sets ARIA_DEMO_WRITES=replay. */
+export type Mode = { pilot?: boolean; demoWrites?: boolean | 'replay' }
 
 const sandboxes: string[] = []
 let current = ''
@@ -26,6 +27,7 @@ let current = ''
  * demo mode. Call it again as the first line of a test that needs another mode.
  */
 export function sandbox(mode: Mode = {}): string {
+  vi.useRealTimers() // a test that used fake timers must not leave them to the next one
   vi.resetAllMocks()
   vi.unstubAllEnvs()
   current = fs.mkdtempSync(path.join(os.tmpdir(), 'aria-test-'))
@@ -34,7 +36,7 @@ export function sandbox(mode: Mode = {}): string {
   vi.spyOn(process, 'cwd').mockReturnValue(current)
   vi.stubEnv('DATA_ROOT', path.join(current, 'data'))
   if (mode.pilot) vi.stubEnv('ARIA_MODE', 'pilot')
-  if (mode.demoWrites) vi.stubEnv('ARIA_DEMO_WRITES', '1')
+  if (mode.demoWrites) vi.stubEnv('ARIA_DEMO_WRITES', mode.demoWrites === 'replay' ? 'replay' : '1')
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => {
@@ -50,6 +52,7 @@ export function sandbox(mode: Mode = {}): string {
 
 /** Remove the sandboxes of this file. Waits out the store's 400 ms save timer first. */
 export async function cleanupSandboxes() {
+  vi.useRealTimers()
   await new Promise((resolve) => setTimeout(resolve, 450))
   for (const dir of sandboxes.splice(0)) fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 })
 }
@@ -88,6 +91,52 @@ export async function outsideCalls(): Promise<typeof NO_OUTSIDE_CALLS> {
     poster: count(image.generateImage),
     settlement: count(chain.settleUsdc),
   }
+}
+
+/**
+ * Make every external client throw the moment it is called, and pretend that chain
+ * keys are configured. A mode that claims to need no client has to get through a
+ * whole run like this, with the call counters still at zero.
+ */
+export async function forbidOutsideClients() {
+  const [llm, video, image, chain, escrow] = await Promise.all([
+    import('@/lib/llm'),
+    import('@/lib/video'),
+    import('@/lib/image'),
+    import('@/lib/chain'),
+    import('@/lib/escrowWatch'),
+  ])
+  const forbid = (fn: unknown, name: string) =>
+    vi.mocked(fn as () => unknown).mockImplementation(() => {
+      throw new Error(`${name} was called, but no external client may run here`)
+    })
+  forbid(llm.reliable, 'reliable')
+  forbid(llm.chatDirector, 'chatDirector')
+  forbid(llm.chatOpenAI, 'chatOpenAI')
+  forbid(llm.chatClaude, 'chatClaude')
+  forbid(llm.chatGateway, 'chatGateway')
+  forbid(video.generateVideo, 'generateVideo')
+  forbid(video.fetchVideoResult, 'fetchVideoResult')
+  forbid(image.generateImage, 'generateImage')
+  forbid(chain.settleUsdc, 'settleUsdc')
+  forbid(escrow.startEscrowWatch, 'startEscrowWatch')
+  vi.mocked(chain.chainEnabled).mockReturnValue(true)
+  return { escrowWatchStarts: () => vi.mocked(escrow.startEscrowWatch).mock.calls.length }
+}
+
+/**
+ * With fake timers on: advance simulated time in small steps until `done()` holds.
+ * Returns the simulated milliseconds that passed, so a test can assert that a
+ * delay exists and that it is short.
+ */
+export async function fastForward(done: () => boolean, maxMs = 60_000, stepMs = 100): Promise<number> {
+  let waited = 0
+  while (!done()) {
+    if (waited >= maxMs) throw new Error(`still not done after ${maxMs} ms of simulated time`)
+    await vi.advanceTimersByTimeAsync(stepMs)
+    waited += stepMs
+  }
+  return waited
 }
 
 // ---------- requests ----------

@@ -1,0 +1,442 @@
+# T11 red run: tests/replay.test.ts and tests/demo-readonly.test.ts against the code before replay mode exists
+# Command: npx vitest run tests/replay.test.ts tests/demo-readonly.test.ts --reporter=verbose
+# Captured 2026-11-12. ANSI colours removed, the repo path replaced with <repo>.
+
+
+ RUN  v4.1.12 <repo>
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+ × tests/replay.test.ts > replay demo: what a reviewer can do > offers exactly the templates that have a recorded run 120ms
+   → startEscrowWatch was called, but no external client may run here
+ ✓ tests/replay.test.ts > replay demo: what a reviewer can do > leaves the template list alone outside replay mode 7ms
+ × tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s vertical bumper: cold brew can launch" through both gates on recorded content, with every client forbidden 5ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s destination teaser: island lagoon" through both gates on recorded content, with every client forbidden 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s explainer hook: how lightning forms" through both gates on recorded content, with every client forbidden 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what stays closed > refuses a custom brief with one clear reason and creates nothing 7ms
+   → expected '' to be 'POST' // Object.is equality
+ × tests/replay.test.ts > replay demo: what stays closed > refuses an empty request with one clear reason and creates nothing 3ms
+   → expected '' to be 'POST' // Object.is equality
+ × tests/replay.test.ts > replay demo: what stays closed > refuses a template index that is not offered with one clear reason and creates nothing 3ms
+   → expected '' to be 'POST' // Object.is equality
+ × tests/replay.test.ts > replay demo: what stays closed > refuses a revision with a reason and leaves the cut at the gate 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what stays closed > refuses an override of the jury pick, because only the pick has footage 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what stays closed > ignores render options at the gate: the recorded cut is what it is 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: what stays closed > still follows the transition table 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: memory only > keeps the newest 20 orders and drops the oldest 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: memory only > a dropped order goes quiet: it adds no event and never reaches the gate 3ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: memory only > loads nothing from disk and writes nothing to disk 6ms
+   → startEscrowWatch was called, but no external client may run here
+ × tests/replay.test.ts > replay demo: the store itself refuses what would need a client > does not revise, resume, warm talents or register a portrait 3ms
+   → startEscrowWatch was called, but no external client may run here
+stderr | tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+ ✓ tests/demo-readonly.test.ts > route discovery > finds write handlers in the app directory 9ms
+ ✓ tests/demo-readonly.test.ts > route discovery > has no stale exemption 1ms
+ ✓ tests/demo-readonly.test.ts > route discovery > has no stale replay entry 1ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 17ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, ARIA_DEMO_WRITES=1: not refused 6ms
+ × tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 50ms
+   → expected 'read-only demo' not to be 'read-only demo' // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, no session: 401 as before 5ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/greenlight' > pilot mode, logged in: not refused 7ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+stderr | tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 4ms
+   → expected 'read-only demo' not to be 'read-only demo' // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, no session: 401 as before 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/orders' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 7ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, no session: 401 as before 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/playbook' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 5ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/prune' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, ARIA_DEMO_WRITES=1: not refused 3ms
+ × tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 5ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/reset' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 5ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 6ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+stderr | tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, ARIA_DEMO_WRITES=1: not refused
+[demo] ARIA_DEMO_WRITES=1: every caller can write and spend the server keys. Use it only on a machine you control.
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, no session: 401 as before
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+stderr | tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, logged in: not refused
+[tenant] ARIA_COOKIE_SECRET is unset: sessions will not survive a restart
+
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, no session: 401 as before 9ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/resume' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 3ms
+   → expected 'read-only demo' not to be 'read-only demo' // Object.is equality
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, no session: 401 as before 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/review' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 5ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, no session: 401 as before 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent' > pilot mode, logged in: not refused 6ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, default: refused with 405, an Allow header and a reason, and nothing happens 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, ARIA_DEMO_WRITES=1: not refused 4ms
+ × tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called 5ms
+   → expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, no session: 401 as before 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/talent/upload' > pilot mode, logged in: not refused 7ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/login' (exempt: 'demo mode has no login, it answers { …') > demo mode, default: stays open and has no side effect 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/login' (exempt: 'demo mode has no login, it answers { …') > demo mode, ARIA_DEMO_WRITES=replay: stays open and has no side effect 4ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/logout' (exempt: 'it only clears the session cookie in …') > demo mode, default: stays open and has no side effect 3ms
+ ✓ tests/demo-readonly.test.ts > 'POST /api/logout' (exempt: 'it only clears the session cookie in …') > demo mode, ARIA_DEMO_WRITES=replay: stays open and has no side effect 3ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "0" does not enable writes 2ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "true" does not enable writes 2ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "yes" does not enable writes 2ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "on" does not enable writes 6ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value " 1" does not enable writes 3ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "1 " does not enable writes 3ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "" does not enable writes 3ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "REPLAY" is not the replay tier: every write stays closed, read-only 12ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "Replay" is not the replay tier: every write stays closed, read-only 12ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value " replay" is not the replay tier: every write stays closed, read-only 11ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "replay " is not the replay tier: every write stays closed, read-only 12ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "replay1" is not the replay tier: every write stays closed, read-only 14ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > the value "record" is not the replay tier: every write stays closed, read-only 12ms
+ ✓ tests/demo-readonly.test.ts > the ARIA_DEMO_WRITES switch > logs one warning when it is on, however many writes follow 6ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 24 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/greenlight' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/orders' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/review' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+AssertionError: expected 'read-only demo' not to be 'read-only demo' // Object.is equality
+ ❯ tests/demo-readonly.test.ts:154:30
+    152|       // the route is reachable: whatever it says to an empty request,…
+    153|       expect(body.reason).not.toBe(REPLAY_CLOSED_REASON)
+    154|       expect(body.error).not.toBe('read-only demo')
+       |                              ^
+    155|     } else {
+    156|       expect(res.status).toBe(405)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/24]⎯
+
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/playbook' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/prune' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/reset' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/resume' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/talent' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+ FAIL  tests/demo-readonly.test.ts > 'POST /api/talent/upload' > demo mode, ARIA_DEMO_WRITES=replay: closed unless listed in REPLAY_OPEN, and no client is called
+AssertionError: expected { error: 'read-only demo', …(1) } to deeply equal { error: 'replay demo', …(1) }
+
+- Expected
++ Received
+
+  {
+-   "error": "replay demo",
+-   "reason": "Replay demo: only template briefs, greenlight and acceptance are open.",
++   "error": "read-only demo",
++   "reason": "Demo mode is read-only: writes need ARIA_DEMO_WRITES=1 on the server.",
+  }
+
+ ❯ tests/demo-readonly.test.ts:159:20
+    157|       const mod = await load(h.spec)
+    158|       expect(res.headers.get('allow')).toBe(READ_METHODS.filter((m) =>…
+    159|       expect(body).toEqual({ error: 'replay demo', reason: REPLAY_CLOS…
+       |                    ^
+    160|       expect(storesCreated()).toBe(0)
+    161|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what a reviewer can do > offers exactly the templates that have a recorded run
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ tests/replay.test.ts:109:27
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s vertical bumper: cold brew can launch" through both gates on recorded content, with every client forbidden
+ FAIL  tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s destination teaser: island lagoon" through both gates on recorded content, with every client forbidden
+ FAIL  tests/replay.test.ts > replay demo: what a reviewer can do > walks "5s explainer hook: how lightning forms" through both gates on recorded content, with every client forbidden
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ tests/replay.test.ts:125:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > refuses a custom brief with one clear reason and creates nothing
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > refuses an empty request with one clear reason and creates nothing
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > refuses a template index that is not offered with one clear reason and creates nothing
+AssertionError: expected '' to be 'POST' // Object.is equality
+
+- Expected
++ Received
+
+- POST
+
+ ❯ tests/replay.test.ts:178:38
+    176|     const res = await post('orders', body)
+    177|     expect(res.status).toBe(405)
+    178|     expect(res.headers.get('allow')).toBe('POST')
+       |                                      ^
+    179|     expect(await res.json()).toEqual({ error: 'replay demo', reason: R…
+    180|     expect(st.getStore().state.orders).toEqual([])
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > refuses a revision with a reason and leaves the cut at the gate
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ fireToGate tests/replay.test.ts:90:13
+ ❯ fireToReview tests/replay.test.ts:96:13
+ ❯ tests/replay.test.ts:186:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > refuses an override of the jury pick, because only the pick has footage
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ fireToGate tests/replay.test.ts:90:13
+ ❯ tests/replay.test.ts:198:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > ignores render options at the gate: the recorded cut is what it is
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ fireToGate tests/replay.test.ts:90:13
+ ❯ tests/replay.test.ts:209:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: what stays closed > still follows the transition table
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ fireToGate tests/replay.test.ts:90:13
+ ❯ tests/replay.test.ts:227:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: memory only > keeps the newest 20 orders and drops the oldest
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ tests/replay.test.ts:248:44
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: memory only > a dropped order goes quiet: it adds no event and never reaches the gate
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ tests/replay.test.ts:256:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: memory only > loads nothing from disk and writes nothing to disk
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ tests/replay.test.ts:282:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/24]⎯
+
+ FAIL  tests/replay.test.ts > replay demo: the store itself refuses what would need a client > does not revise, resume, warm talents or register a portrait
+Error: startEscrowWatch was called, but no external client may run here
+ ❯ tests/harness.ts:111:13
+    109|   const forbid = (fn: unknown, name: string) =>
+    110|     vi.mocked(fn as () => unknown).mockImplementation(() => {
+    111|       throw new Error(`${name} was called, but no external client may …
+       |             ^
+    112|     })
+    113|   forbid(llm.reliable, 'reliable')
+ ❯ Object.publicState lib/store.ts:921:15
+ ❯ Module.GET app/api/state/route.ts:13:27
+ ❯ getState tests/replay.test.ts:60:41
+ ❯ fire tests/replay.test.ts:78:25
+ ❯ fireToGate tests/replay.test.ts:90:13
+ ❯ fireToReview tests/replay.test.ts:96:13
+ ❯ tests/replay.test.ts:297:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/24]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  24 failed | 58 passed (82)
+   Start at  17:03:26
+   Duration  1.43s (transform 405ms, setup 130ms, import 244ms, tests 1.56s, environment 0ms)
+
