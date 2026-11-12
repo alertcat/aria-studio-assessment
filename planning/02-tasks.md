@@ -279,7 +279,7 @@ Added 2026-11-12 at 16:58. Same conventions as above.
 | T11 | Replay mode, red then green | done |
 | T12 | Walk the replay in the running app | done |
 | T13 | Minimal `fly.toml` | done, not deployed |
-| T14 | README and planning files | todo |
+| T14 | README and planning files | done |
 | T15 | Extend the session logs | todo |
 | T16 | Final verification | todo |
 

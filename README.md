@@ -5,10 +5,11 @@ A one-person media studio run by AI agents, with a human gate on every dollar.
 ## Assessment window: what changed
 
 Everything after the `baseline` tag was done on 2026-11-12 in one session with Claude Code as
-the coding agent. The time box was three hours. The session took a little over one hour, and
-the log has the timestamps. The project itself is older (see "Status of this repository"
-below). The whole change is `git diff baseline..HEAD`. The working notes are in
-[`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
+the coding agent, in two parts. The first part (items 1 to 5 below) had a three-hour time box
+and took a little over one hour. The second part (items 6 and 7) was a follow-up request the
+same afternoon and took under an hour. The log has the timestamps. The project itself is older
+(see "Status of this repository" below). The whole change is `git diff baseline..HEAD`. The
+working notes are in [`planning/`](planning/) and the agent session log is in [`logs/`](logs/).
 
 ### What changed
 
@@ -24,12 +25,68 @@ below). The whole change is `git diff baseline..HEAD`. The working notes are in
    a delivered order could be sent back, approved again and booked twice, and an order that was
    still rendering could start a second render, which in pilot mode is a second charge on the
    customer's key.
-3. **A test suite where there was none.** 116 tests in about 6 seconds, with no network, no
+3. **A test suite where there was none.** 150 tests in a few seconds, with no network, no
    key and no real data directory ([`tests/setup.ts`](tests/setup.ts)). The permission test
    keeps no list of routes. It walks `app/`, imports every route file and tests every write
    method it exports, so a route added later is covered the day it is added.
 4. **The studio shows why a write was refused.** This is the only UI change.
 5. **A CI workflow** that runs install, test and build. It has not run on GitHub yet.
+6. **A public demo that needs no key.** `ARIA_DEMO_WRITES=replay` opens three writes: a
+   template brief, greenlight and acceptance. It replays runs that were recorded earlier and
+   are part of the repository. No external client is called, and the tests prove it by making
+   every client throw ([`tests/replay.test.ts`](tests/replay.test.ts)). Details in the next
+   section.
+7. **Dependencies.** `next` 16.2.4 to 16.4.6, then `npm audit fix`. Advisories went from 8,
+   one of them critical, to 1.
+
+### Public demo: what it can and cannot do
+
+`ARIA_DEMO_WRITES=replay` sits between read-only and full writes. It is meant for a public page
+on a host that holds no key. [`fly.toml`](fly.toml) describes such a host. It has not been
+deployed from this repository.
+
+What a visitor can do, on `/studio`:
+
+- Fire one of three template briefs: Kopi Loco, Visit Palawan, SlateLab.
+- Watch three directors pitch and the jury rank them. That takes about 4 to 10 seconds.
+- Greenlight the jury's pick and watch the render progress for about 5 seconds.
+- Watch the cut, look at the poster, and accept. The order is delivered with a simulated
+  settlement.
+
+What it is: a replay. The concepts, the verdicts, the video and the poster come from
+`public/demo-state.json` and `public/media`. No model, render service or chain is called, and
+the first line of each order's event log says so. The code that paces, ranks, books and moves
+the order through the two gates is the code the live pipeline runs.
+
+What a visitor cannot do. Each of these answers 405 with one sentence that starts with
+"Replay demo:", and the studio shows that sentence in its header:
+
+- Write a custom brief. A template without a recorded run (Kaya & Co.) is not offered at all.
+- Override the jury's pick, or choose a model, a resolution or a virtual talent. Only the
+  recorded cut exists.
+- Send a cut back for revision.
+- Upload a portrait, change the playbook, prune or reset.
+
+What the host keeps: nothing on disk. Orders live in memory, the newest 20 at most. A machine
+that stops when idle starts empty again. Orders live in one process, so the app has to run as
+exactly one machine. On Fly.io that is `fly scale count 1` after the first deploy.
+
+What it does not prove: that the live pipeline works today. For that, run it with your own
+keys (see "Run the live pipeline" below).
+
+To try it locally, with no key, in Git Bash:
+
+```bash
+ARIA_DEMO_WRITES=replay npm run dev
+```
+
+In PowerShell:
+
+```powershell
+$env:ARIA_DEMO_WRITES='replay'; npm run dev
+```
+
+Then open http://localhost:3000/studio.
 
 ### Verify in 60 seconds, no key needed
 
@@ -43,7 +100,7 @@ npm install
 npm test
 ```
 
-Expected: `Test Files 4 passed (4)` and `Tests 115 passed | 1 expected fail (116)`. The expected
+Expected: `Test Files 5 passed (5)` and `Tests 149 passed | 1 expected fail (150)`. The expected
 failure is the known gap described under "Weakest part" below.
 
 Measured on a clean export of this branch (Node 20.18, Windows, warm npm cache): install 48
@@ -76,15 +133,27 @@ the header and no order is created.
 - **A guard line in each route plus a test that finds routes, not middleware.** The guard is
   one visible line and easy to test. The test, not a convention, is what catches a route that
   forgets it.
-- **Checks only in `lib/store.ts`.** The file is still about 1,000 lines. It changed by 22
-  lines, all of them guards. No refactor.
+- **No refactor of `lib/store.ts`.** The file is still one large module. The first part changed
+  22 lines, all of them guards. The replay demo added about 110 more: one mode flag and the
+  recorded source.
+- **The public demo replays, it does not generate.** That is what makes it safe without a key,
+  and honest about it. The cost: no override, no revision, no custom brief, and no proof that
+  the models work.
+- **One pipeline with two sources, not a second pipeline.** Replay takes a recorded answer
+  where the live path calls a model. Events, ranking, booking and pacing are shared, so the
+  demo cannot drift from the product.
+- **Every replay refusal is a 405**, also when only the body is refused (a custom brief, an
+  override, a revision). One status lets the studio show every reason through one branch. The
+  cost: a 405 whose `Allow` header lists `POST`.
+- **Memory only.** No file, no volume, 20 orders. The cost: one machine only, an empty studio
+  after every stop, and totals that keep counting orders that have left the list.
 - **Failing tests are committed on purpose.** Each fix has a `test(red):` commit directly
   before it, with the captured output in [`planning/evidence/`](planning/evidence/).
 - **Vitest 4.1.12, not the latest 5.x**, because 5.x needs Node 22.12 and this project runs on
   Node 20. It is the only new dependency.
-- **Left alone:** lint, deployment, the landing page (it stays silent on a refused click), and
-  dependency upgrades. `npm audit` reports 8 advisories in the baseline dependencies, including
-  a critical one in `next` 16.2.4 that 16.4.6 fixes. Adding Vitest did not change that list.
+- **Left alone:** lint, any real deployment, the landing page (it stays silent on a refused
+  click), and major-version upgrades. One advisory is left, in `zod` 3.x, and its fix is zod 4.
+  The app lists `zod` but never imports it.
 
 All decisions with their reasons are in [`planning/03-decisions.md`](planning/03-decisions.md).
 
@@ -99,6 +168,9 @@ Helped:
   message.
 - It built the hermetic test harness, wrote each failing test before its fix, and kept the
   planning files current while working.
+- For the replay demo it read the snapshot before designing anything and found that "three
+  templates" is a fact of the recorded data. The code has four. It then broke its own
+  implementation on purpose five times to check that the tests notice.
 
 Wrong, and how it was corrected (full list in
 [`planning/04-agent-misses.md`](planning/04-agent-misses.md)):
@@ -111,6 +183,10 @@ Wrong, and how it was corrected (full list in
   pilot mode. All tests were green. It was found by clicking the button in the running app.
 - Two tooling assumptions failed on first run (the config file format, mock state leaking
   between tests), and the GitHub Actions versions it remembered were three majors behind.
+- Its time claims were guesses. It wrote "about 45 minutes" for a phase that the log shows
+  took 17.
+- Its first browser check of the replay demo matched text too loosely, ran ahead and proved
+  nothing. The result was confirmed from the server state instead.
 
 ### Weakest part and next step
 
@@ -131,7 +207,12 @@ Also weak:
   are open to anyone who can reach the server.
 - The UI has no tests. The one UI bug of this session was found by hand.
 - The CI workflow has not run yet, and the suite has only run on Windows.
-- The `next` upgrade to 16.4.6 is the first thing to do before any public deployment.
+- `fly.toml` has never been deployed. It was checked against the Fly.io reference and it
+  parses. Nothing more is known about it.
+- The public demo shows recorded runs only. It is evidence for the gates and the flow, not for
+  the models.
+- One advisory is left in `zod` 3.x, a dependency the app does not use. Removing it would
+  clear the report.
 
 ## What it does
 
@@ -181,7 +262,8 @@ Live generation needs your own endpoints. Copy `.env.example` to `.env.local` an
 | `RENDER_ASSET_BASE` | Virtual talent portraits (optional) |
 | `CHAIN_BUYER_PK`, `CHAIN_STUDIO_ADDR` | Testnet USDC settlement (optional) |
 | `ARIA_MODE=pilot`, `ARIA_COOKIE_SECRET` | Per-customer login instead of the single demo tenant |
-| `ARIA_DEMO_WRITES=1` | Lets demo mode accept writes. It has no login, so use it only on a machine you control |
+| `ARIA_DEMO_WRITES=1` | Lets demo mode accept every write. It has no login, so use it only on a machine you control |
+| `ARIA_DEMO_WRITES=replay` | The public demo: recorded runs, three writes, no key needed and none used |
 
 Then run `npm run dev` and open `/studio`. In demo mode every write is refused with a 405 until
 `ARIA_DEMO_WRITES=1` is set.
@@ -196,19 +278,21 @@ Then run `npm run dev` and open `/studio`. In demo mode every write is refused w
 | `lib/video.ts`, `lib/image.ts` | Render clients |
 | `lib/tenant.ts`, `lib/ctx.ts` | Modes and request authorisation |
 | `lib/gates.ts` | Which order action is legal from which status |
+| `lib/replay.ts` | The recorded runs behind the public demo, and its rules |
 | `app/api/*` | Routes. Gate 1 is `greenlight`, Gate 2 is `review` |
 | `app/studio`, `app/page.tsx` | Control room and landing page |
 | `tests/` | Vitest suite and its hermetic harness |
 | `planning/`, `logs/` | Assessment notes and the agent session log |
+| `fly.toml` | A host for the public demo. Not deployed |
 
 ## Known gaps in the baseline
 
 This list describes the `baseline` tag. The note after each item says where it stands now.
 
-- No automated tests and no CI. Now: 116 tests and a CI workflow.
+- No automated tests and no CI. Now: 150 tests and a CI workflow.
 - `lib/store.ts` is about 1,000 lines. Now: unchanged.
 - Demo mode treats every caller as the default tenant. Now: still true, but demo mode is
-  read-only unless `ARIA_DEMO_WRITES=1`.
+  read-only unless `ARIA_DEMO_WRITES` is set to `replay` or `1`.
 - Revenue is booked at acceptance, before settlement is confirmed. Now: unchanged, and pinned
   by a test.
 - `npm run lint` does not work yet: ESLint is not a dependency. Now: unchanged.
