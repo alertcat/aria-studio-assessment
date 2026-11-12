@@ -17,7 +17,7 @@ Phase 1 (done before this file): hypotheses verified, plan written. No code chan
 | T6 | CI workflow (optional) | 5 min | 1 min | done, not yet run on GitHub |
 | T7 | README top section | 15 min | 3 min | done |
 | T8 | Session logs | 20 min | 10 min | done |
-| T9 | Final verification | 5 min | 2 min | see the result at the end of this file |
+| T9 | Final verification | 5 min | 2 min | done |
 
 "Actual" is agent wall-clock time, taken from the commit times. The estimates were guesses made
 without a clock and were far too high (miss M-11). Phase 1 took 17 minutes (15:10 to 15:27) and
@@ -259,3 +259,12 @@ git status --short
 ```
 
 Expected: tests pass, build passes, small commits in order, clean tree, nothing pushed.
+
+Result: done at commit b4a6c24. `npm test`: 4 files, 115 passed and 1 expected failure, in 3
+seconds. `npm run build`: passes. The tree is clean. The brief PDF, `data/` and `.env.local` are
+not tracked, and `next-env.d.ts` is unchanged from the baseline. A scan of all 36 changed files
+(the lockfile aside) for the Windows user name, e-mail addresses, absolute paths and key-like
+strings found nothing. Nothing was pushed: the repository has no remote.
+
+This entry was committed afterwards as a documentation-only change, and the suite and the
+build were run once more on that final commit.
