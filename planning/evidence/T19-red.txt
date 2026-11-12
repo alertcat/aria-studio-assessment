@@ -1,0 +1,95 @@
+# T19 red run: tests/studio-prefs.test.ts against the extracted, unchanged start logic
+# Command: npx vitest run tests/studio-prefs.test.ts --reporter=verbose
+# Captured 2026-11-12. ANSI colours removed, the repo path replaced with <repo>.
+
+
+ RUN  v4.1.12 <repo>
+
+ × tests/studio-prefs.test.ts > how the studio starts > is dark and English for a first visit, whatever the system and the browser prefer 9ms
+   → expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+ ✓ tests/studio-prefs.test.ts > how the studio starts > keeps the theme and language the visitor chose earlier 1ms
+ ✓ tests/studio-prefs.test.ts > how the studio starts > lets a link pin both: hash "#theme=light&lang=zh", query "" 1ms
+ ✓ tests/studio-prefs.test.ts > how the studio starts > lets a link pin both: hash "", query "?theme=light&lang=zh-CN" 1ms
+ ✓ tests/studio-prefs.test.ts > how the studio starts > lets a link pin both: hash "#theme=dark&lang=en", query "" 1ms
+ × tests/studio-prefs.test.ts > how the studio starts > ignores values it does not know and falls back to dark and English 2ms
+   → expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+ × tests/studio-prefs.test.ts > how the studio starts > is dark and English when storage is blocked, and a link still works 2ms
+   → expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/studio-prefs.test.ts > how the studio starts > is dark and English for a first visit, whatever the system and the browser prefer
+AssertionError: expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+
+- Expected
++ Received
+
+  {
+    "lang": "en",
+    "langChosen": false,
+-   "theme": "dark",
++   "theme": "light",
+  }
+
+ ❯ tests/studio-prefs.test.ts:27:29
+     25|   it('is dark and English for a first visit, whatever the system and t…
+     26|     const env = visitor()
+     27|     expect(startPrefs(env)).toEqual({ theme: 'dark', lang: 'en', langC…
+       |                             ^
+     28|     expect(env.matchMedia).not.toHaveBeenCalled()
+     29|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/studio-prefs.test.ts > how the studio starts > ignores values it does not know and falls back to dark and English
+AssertionError: expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+
+- Expected
++ Received
+
+  {
+    "lang": "en",
+    "langChosen": false,
+-   "theme": "dark",
++   "theme": "light",
+  }
+
+ ❯ tests/studio-prefs.test.ts:55:68
+     53|
+     54|   it('ignores values it does not know and falls back to dark and Engli…
+     55|     expect(startPrefs(visitor({ search: '?theme=blue&lang=fr' }))).toE…
+       |                                                                    ^
+     56|     expect(startPrefs(visitor({ saved: { aria_theme: 'neon', aria_lang…
+     57|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/studio-prefs.test.ts > how the studio starts > is dark and English when storage is blocked, and a link still works
+AssertionError: expected { theme: 'light', lang: 'en', …(1) } to deeply equal { theme: 'dark', lang: 'en', …(1) }
+
+- Expected
++ Received
+
+  {
+    "lang": "en",
+    "langChosen": false,
+-   "theme": "dark",
++   "theme": "light",
+  }
+
+ ❯ tests/studio-prefs.test.ts:60:59
+     58|
+     59|   it('is dark and English when storage is blocked, and a link still wo…
+     60|     expect(startPrefs(visitor({ blockedStorage: true }))).toEqual({ th…
+       |                                                           ^
+     61|     expect(startPrefs(visitor({ blockedStorage: true, hash: '#theme=li…
+     62|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 4 passed (7)
+   Start at  18:26:56
+   Duration  781ms (transform 65ms, setup 69ms, import 20ms, tests 479ms, environment 0ms)
+
