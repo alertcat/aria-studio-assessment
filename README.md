@@ -55,17 +55,20 @@ What a visitor can do, on `/studio`:
 
 What it is: a replay. The concepts, the verdicts, the video and the poster come from
 `public/demo-state.json` and `public/media`. No model, render service or chain is called, and
-the first line of each order's event log says so. The code that paces, ranks, books and moves
-the order through the two gates is the code the live pipeline runs.
+the event log of each order says so. The code that paces, ranks, books and moves the order
+through the two gates is the code the live pipeline runs.
 
-What a visitor cannot do. Each of these answers 405 with one sentence that starts with
-"Replay demo:", and the studio shows that sentence in its header:
+What a visitor cannot do. Each of these requests is refused with a 405 and one sentence that
+starts with "Replay demo:". When the studio sends such a request, it shows the sentence in its
+header:
 
 - Write a custom brief. A template without a recorded run (Kaya & Co.) is not offered at all.
-- Override the jury's pick, or choose a model, a resolution or a virtual talent. Only the
-  recorded cut exists.
+- Override the jury's pick. Only the recorded cut exists.
 - Send a cut back for revision.
-- Upload a portrait, change the playbook, prune or reset.
+- Change the playbook, register a portrait, prune or reset.
+
+The studio still shows the controls for model, resolution and duration at Gate 1. In replay
+mode they have no effect: the recorded cut is shown as it was rendered.
 
 What the host keeps: nothing on disk. Orders live in memory, the newest 20 at most. A machine
 that stops when idle starts empty again. Orders live in one process, so the app has to run as
@@ -88,7 +91,7 @@ $env:ARIA_DEMO_WRITES='replay'; npm run dev
 
 Then open http://localhost:3000/studio.
 
-### Verify in 60 seconds, no key needed
+### Verify in about a minute, no key needed
 
 No `.env` file is needed for any of this.
 
@@ -103,8 +106,9 @@ npm test
 Expected: `Test Files 5 passed (5)` and `Tests 149 passed | 1 expected fail (150)`. The expected
 failure is the known gap described under "Weakest part" below.
 
-Measured on a clean export of this branch (Node 20.18, Windows, warm npm cache): install 48
-seconds, tests 5 seconds. `npm run build` takes another 15 seconds and type-checks the tests.
+Measured twice on a clean export of this branch (Node 20.18, Windows, warm npm cache): install
+48 and 62 seconds, tests 5 seconds both times. `npm run build` takes another 15 to 21 seconds
+and type-checks the tests.
 
 To see the real server refuse a write, start it in its default mode:
 

@@ -280,7 +280,7 @@ Added 2026-11-12 at 16:58. Same conventions as above.
 | T12 | Walk the replay in the running app | done |
 | T13 | Minimal `fly.toml` | done, not deployed |
 | T14 | README and planning files | done |
-| T15 | Extend the session logs | todo |
+| T15 | Extend the session logs | done |
 | T16 | Final verification | todo |
 
 ## T10. Upgrade dependencies
@@ -385,6 +385,12 @@ Expected: a section that says what the public demo can and cannot do.
 ## T15. Extend the session logs
 
 Acceptance: the two commands of T8, run again.
+
+Result: done. The export was run again on the full transcript. The text of the first export
+is an unchanged prefix of the new files, apart from the totals line in the header. Part 2 and
+the end of part 1 are appended. Both files have the same entries in the same order, and the
+redaction check prints nothing. A second clean export of the branch was also rehearsed after
+the upgrade: `npm ci` in 62 seconds, 149 tests passed and 1 expected failure, build passes.
 
 ## T16. Final verification
 

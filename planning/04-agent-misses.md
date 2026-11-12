@@ -132,3 +132,19 @@ handoff. "Build agent" is this session.
 - Caught by: the error, and by checking afterwards which files had really changed instead of
   assuming all or nothing.
 - Correction: documents are edited with the file tools. Shell commands are for running things.
+
+## M-15. One progress line to the owner was in English (build agent)
+
+- What happened: the rule is Chinese in the conversation and English in the repository. While
+  editing the store for replay mode I wrote one progress line in English.
+- Caught by: translating the log, where a line needed no translation.
+- Correction: none possible for a line already sent. It stays in the log as it was, and the
+  log's README points it out.
+
+## M-16. "Verify in 60 seconds" was a promise the second measurement did not keep (build agent)
+
+- What happened: the README heading promised 60 seconds, based on one run (48 seconds to
+  install, 5 to test). After the dependency upgrade the same rehearsal took 62 seconds to
+  install, so 67 in total.
+- Caught by: running the clean-export rehearsal a second time.
+- Correction: the heading says "about a minute" and the text gives both measurements.
